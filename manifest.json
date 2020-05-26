@@ -1,0 +1,49 @@
+{
+    "name": "WebNote",
+    "version": "0.0.1",
+    "description": "Note web pages in your browser.",
+    "manifest_version": 2,
+    "background": {
+        "scripts": [
+            "js/background.js"
+        ]
+    },
+    "permissions": [
+        "contextMenus",
+        "tabs"
+    ],
+    "browser_action": {
+        "default_popup": "popup.html",
+        "default_title": "WebNote",
+        "default_icon": {
+            "16": "images/p16.png",
+            "32": "images/p32.png",
+            "48": "images/p48.png",
+            "128": "images/p128.png"
+        }
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "js/content-script.js"
+            ],
+            "css": [
+                "css/custom.css"
+            ],
+            "run_at": "document_start"
+        }
+    ],
+    "icons": {
+        "16": "images/p16.png",
+        "32": "images/p32.png",
+        "48": "images/p48.png",
+        "128": "images/p128.png"
+    },
+    "web_accessible_resources": [
+        "js/inject.js"
+    ],
+    "homepage_url": "https://blog.zeros.live"
+}
