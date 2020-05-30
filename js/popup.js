@@ -5,5 +5,3 @@ button.onclick = function (element) {
         path: "images/eating.ico"
     });
 }
-
-//let winidow = chrome.extension.getBackgroundPage()

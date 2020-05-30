@@ -1,17 +1,13 @@
 {
     "name": "WebNote",
     "version": "0.0.1",
-    "description": "Note web pages in your browser.",
+    "description": "Take notes directly in the page.",
     "manifest_version": 2,
     "background": {
         "scripts": [
             "js/background.js"
         ]
     },
-    "permissions": [
-        "contextMenus",
-        "tabs"
-    ],
     "browser_action": {
         "default_popup": "popup.html",
         "default_title": "WebNote",
@@ -42,8 +38,5 @@
         "48": "images/p48.png",
         "128": "images/p128.png"
     },
-    "web_accessible_resources": [
-        "js/inject.js"
-    ],
     "homepage_url": "https://blog.zeros.live"
 }
