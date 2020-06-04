@@ -12,7 +12,7 @@ function gRange() {
     // node of data that we have selected
     const range = sel.getRangeAt(0);
     let resNodes = dfsNodes(range);
-    console.log(resNodes);
+    hightlight(resNodes);
 }
 
 document.onmouseup = () => {
@@ -70,4 +70,13 @@ function dfsNodes(range) {
         }
     }
     return resNodes;
+}
+
+function hightlight(nodes) {
+    nodes.forEach((node) => {
+        const wrap = document.createElement("span");
+        wrap.setAttribute("class", "test");
+        wrap.appendChild(node.cloneNode(false));
+        node.parentNode.replaceChild(wrap, node);
+    });
 }
