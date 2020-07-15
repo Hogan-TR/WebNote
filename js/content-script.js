@@ -1,15 +1,18 @@
-function mouseCapture() {
+function mouseCapture(event) {
     const uri = window.location.href.replace(window.location.hash, "");
     const sel = window.getSelection();
     if (sel.toString().length === 0) {
+        erasebar();
         return;
     }
     const range = sel.getRangeAt(0);
     // structure range
-    data = structureNode(range);
-    saveSync(uri, data);
-    const nodes = dfsNodes(range);
-    highlight(nodes);
+    // data = structureNode(range);
+    // saveSync(uri, data);
+    // const nodes = dfsNodes(range);
+    // highlight(nodes);
+
+    injectbar(range);
 }
 
 function pageRender() {
@@ -209,8 +212,9 @@ function dfsNodes(range) {
 }
 
 function highlight(nodes) {
+    console.log(nodes);
     nodes.forEach((node) => {
-        if (!node) {
+        if (!node || !node.textContent.length) {
             return null;
         }
         const wrap = document.createElement("span");
@@ -220,12 +224,38 @@ function highlight(nodes) {
     });
 }
 
-document.onmouseup = () => {
-    mouseCapture();
+function injectbar(range) {
+    erasebar();
+
+    let data = range.getBoundingClientRect();
+    const container = document.createElement("div");
+    container.id = "note-bar";
+    container.style =
+        "position: absolute; left: " +
+        data.left +
+        "px; top: " +
+        (data.top + window.scrollY - 20 - 5) +
+        "px;";
+    const ctx = document.createElement("div");
+    ctx.style = "height:20px;width:20px;background-color:green";
+    container.appendChild(ctx);
+    document.getElementsByTagName("body")[0].appendChild(container);
+}
+
+function erasebar() {
+    const self = document.getElementById("note-bar");
+    if (self) {
+        const parent = self.parentElement;
+        parent.removeChild(self);
+    }
+}
+
+document.onmouseup = (event) => {
+    mouseCapture(event);
 };
 
 window.onload = () => {
     pageRender();
 };
 
-// chrome.storage.sync.clear();
+chrome.storage.sync.clear();
