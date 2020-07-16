@@ -1,0 +1,53 @@
+.switch-box {
+    position: relative;
+    display: inline-block;
+    width: auto;
+    height: auto;
+}
+.switch-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+}
+.switch-label {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    background-color: #e3e3e3;
+    border-radius: 20px;
+    transition: 0.3s;
+}
+.switch-label:after {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #fff;
+    content: "";
+    transition: 0.3s;
+}
+.switch-input:checked ~ .switch-label {
+    background-color: #4cda64;
+}
+.switch-input:checked ~ .switch-label:after {
+    left: 33px;
+}
+.switch-txt {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+.switch-txt:after {
+    content: attr(data-close-txt);
+}
+.switch-input:checked ~ .switch-txt:after {
+    content: attr(data-open-txt);
+}

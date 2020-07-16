@@ -2,18 +2,16 @@
 <html>
 
 <head>
-    <style>
-        button {
-            width: 30px;
-            height: 30px;
-            outline: none;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/popup.css" type="text/css">
 </head>
 
 <body>
-    <button id="change"></button>
-    <script src="js/popup.js"></script>
+    <div class="switch-box">
+        <input class="switch-input" type="checkbox" id="switch-input">
+        <label class="switch-label" for="switch-input"></label>
+        <span class="switch-txt" data-open-txt="已启用" data-close-txt="已禁用"></span>
+    </div>
 </body>
 
 </html>
