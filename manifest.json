@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "description": "Take notes directly in the page.",
     "manifest_version": 2,
-    "permissions": ["storage"],
+    "permissions": ["storage", "tabs", "activeTab"],
     "background": {
         "scripts": ["js/background.js"]
     },

@@ -1,3 +1,6 @@
+/* global variable */
+let mark = false;
+
 function mouseCapture(event) {
     const uri = window.location.href.replace(window.location.hash, "");
     const sel = window.getSelection();
@@ -7,11 +10,10 @@ function mouseCapture(event) {
     }
     const range = sel.getRangeAt(0);
     // structure range
-    // data = structureNode(range);
-    // saveSync(uri, data);
-    // const nodes = dfsNodes(range);
-    // highlight(nodes);
-
+    data = structureNode(range);
+    saveSync(uri, data);
+    const nodes = dfsNodes(range);
+    highlight(nodes);
     injectbar(range);
 }
 
@@ -32,6 +34,7 @@ function pageRender() {
                 const nodes = dfsNodes(range);
                 highlight(nodes);
             });
+            mark = true; // change control mark
         }
     });
 }
@@ -226,7 +229,6 @@ function highlight(nodes) {
 
 function injectbar(range) {
     erasebar();
-
     let data = range.getBoundingClientRect();
     const container = document.createElement("div");
     container.id = "note-bar";
@@ -237,7 +239,7 @@ function injectbar(range) {
         (data.top + window.scrollY - 20 - 5) +
         "px;";
     const ctx = document.createElement("div");
-    ctx.style = "height:20px;width:20px;background-color:green";
+    ctx.style = "height:20px;width:100px;background-color:green";
     container.appendChild(ctx);
     document.getElementsByTagName("body")[0].appendChild(container);
 }
@@ -250,12 +252,41 @@ function erasebar() {
     }
 }
 
+document.onmousedown = (event) => {
+    erasebar();
+};
+
 document.onmouseup = (event) => {
-    mouseCapture(event);
+    if (mark) {
+        mouseCapture();
+    }
 };
 
 window.onload = () => {
     pageRender();
 };
 
-chrome.storage.sync.clear();
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.type === "change") {
+        mark = request.mark;
+        sendResponse("success");
+    } else if (request.type === "inquire") {
+        sendResponse(mark);
+    }
+});
+
+// chrome.storage.sync.clear();
+
+/* test */
+// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+//     // request => msg; sender => {id, origin} sendResponse => function
+//     // console.log(sender.tab ?"from a content script:" + sender.tab.url :"from the extension");
+//     if (request.cmd === "test") alert(request.value);
+//     sendResponse("I received.");
+// });
+// chrome.runtime.sendMessage(
+//     { greeting: "hello, I'm content-script, Auto" },
+//     function (response) {
+//         console.log("response from popup: " + response);
+//     }
+// );
