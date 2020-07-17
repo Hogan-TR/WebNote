@@ -1,8 +1,8 @@
 /* global variable */
+const uri = window.location.href.replace(window.location.hash, "");
 let mark = false;
 
 function mouseCapture(event) {
-    const uri = window.location.href.replace(window.location.hash, "");
     const sel = window.getSelection();
     if (sel.toString().length === 0) {
         erasebar();
@@ -11,17 +11,17 @@ function mouseCapture(event) {
     const range = sel.getRangeAt(0);
     // structure range
     data = structureNode(range);
-    saveSync(uri, data);
+    saveSync(data);
     const nodes = dfsNodes(range);
     highlight(nodes);
     injectbar(range);
 }
 
 function pageRender() {
-    const uri = window.location.href.replace(window.location.hash, "");
     chrome.storage.sync.get(uri, (items) => {
-        if (JSON.stringify(items) !== "{}") {
-            const data = items[uri];
+        if (JSON.stringify(items) !== "{}" && items[uri]["mark"]) {
+            mark = items[uri]["mark"];
+            const data = items[uri]["notes"];
             data.forEach((item) => {
                 let start = antiNode(item["startContainer"]);
                 let end = antiNode(item["endContainer"]);
@@ -34,7 +34,6 @@ function pageRender() {
                 const nodes = dfsNodes(range);
                 highlight(nodes);
             });
-            mark = true; // change control mark
         }
     });
 }
@@ -94,21 +93,21 @@ function antiNode({ tagName, index, offset }) {
     return { node: curNode, offset: startOffset };
 }
 
-function saveSync(uri, data) {
+function saveSync(data) {
     chrome.storage.sync.get(uri, (items) => {
         if (JSON.stringify(items) !== "{}") {
-            items[uri].push(data);
+            items[uri]["notes"].push(data);
             chrome.storage.sync.set(items, () => {
                 chrome.storage.sync.get(null, (items) => {
-                    console.log(items);
+                    console.log("save note: " + items);
                 });
             });
         } else {
             let iData = new Object();
-            iData[uri] = new Array(data);
+            iData[uri] = { mark: true, notes: [data] };
             chrome.storage.sync.set(iData, () => {
                 chrome.storage.sync.get(null, (items) => {
-                    console.log(items);
+                    console.log("save note: " + items);
                 });
             });
         }
@@ -214,8 +213,19 @@ function dfsNodes(range) {
     return resNodes; // return "Array"
 }
 
+function changeMark() {
+    chrome.storage.sync.get(uri, (items) => {
+        if (JSON.stringify(items) !== "{}") {
+            items[uri]["mark"] = mark;
+            chrome.storage.sync.set(items, () => {
+                location.reload();
+                console.log("change mark: " + mark);
+            });
+        }
+    });
+}
+
 function highlight(nodes) {
-    console.log(nodes);
     nodes.forEach((node) => {
         if (!node || !node.textContent.length) {
             return null;
@@ -269,6 +279,7 @@ window.onload = () => {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.type === "change") {
         mark = request.mark;
+        changeMark();
         sendResponse("success");
     } else if (request.type === "inquire") {
         sendResponse(mark);
@@ -276,6 +287,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 // chrome.storage.sync.clear();
+// chrome.storage.sync.get(null, (items) => {
+//     console.log(items);
+// });
 
 /* test */
 // chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
