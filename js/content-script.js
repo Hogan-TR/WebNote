@@ -240,22 +240,32 @@ function highlight(nodes) {
 function injectbar(range) {
     erasebar();
     let data = range.getBoundingClientRect();
+    // outmost shell
     const container = document.createElement("div");
-    container.id = "note-bar";
-    container.style =
+    container.setAttribute("class", "note-bar");
+    container.setAttribute(
+        "style",
         "position: absolute; left: " +
-        data.left +
-        "px; top: " +
-        (data.top + window.scrollY - 20 - 5) +
-        "px;";
-    const ctx = document.createElement("div");
-    ctx.style = "height:20px;width:100px;background-color:green";
-    container.appendChild(ctx);
+            data.left +
+            "px; top: " +
+            (data.top + window.scrollY - 40) +
+            "px;"
+    );
+    const btn_list = [];
+    const innerText = ["H", "B", "U", "M", "N"];
+    for (let i = 0; i < 5; i++) {
+        const btn = document.createElement("button");
+        btn.setAttribute("type", "button");
+        btn.setAttribute("class", "wn-btn");
+        btn.innerText = innerText[i];
+        btn_list.push(btn);
+        container.appendChild(btn);
+    }
     document.getElementsByTagName("body")[0].appendChild(container);
 }
 
 function erasebar() {
-    const self = document.getElementById("note-bar");
+    const self = document.getElementsByClassName("note-bar")[0];
     if (self) {
         const parent = self.parentElement;
         parent.removeChild(self);
