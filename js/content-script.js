@@ -4,17 +4,20 @@ let mark = false;
 
 function mouseCapture(event) {
     const sel = window.getSelection();
-    if (sel.toString().length === 0) {
+    if (!sel.toString().length) {
         erasebar();
+        return;
+    } else if (isOnbar(event)) {
         return;
     }
     const range = sel.getRangeAt(0);
-    // structure range
-    data = structureNode(range);
-    saveSync(data);
-    const nodes = dfsNodes(range);
-    highlight(nodes);
+    erasebar();
     injectbar(range);
+    // structure range
+    // data = structureNode(range);
+    // saveSync(data);
+    // const nodes = dfsNodes(range);
+    // highlight(nodes);
 }
 
 function pageRender() {
@@ -237,8 +240,23 @@ function highlight(nodes) {
     });
 }
 
+function isOnbar(event) {
+    const bar = document.getElementsByClassName("note-bar");
+    if (!bar.length) return false;
+    const mouse_x = event.clientX;
+    const mouse_y = event.clientY;
+    const scope_bar = bar[0].getBoundingClientRect();
+    if (
+        mouse_x >= scope_bar.left &&
+        mouse_x <= scope_bar.right &&
+        mouse_y >= scope_bar.top &&
+        mouse_y <= scope_bar.bottom
+    )
+        return true;
+    else return false;
+}
+
 function injectbar(range) {
-    erasebar();
     let data = range.getBoundingClientRect();
     // outmost shell
     const container = document.createElement("div");
@@ -246,9 +264,9 @@ function injectbar(range) {
     container.setAttribute(
         "style",
         "position: absolute; left: " +
-            data.left +
+            (data.left + window.scrollX) +
             "px; top: " +
-            (data.top + window.scrollY - 40) +
+            (data.top + window.scrollY - 32 - 8) +
             "px;"
     );
     const btn_list = [];
@@ -261,6 +279,7 @@ function injectbar(range) {
         btn_list.push(btn);
         container.appendChild(btn);
     }
+    btn_list[0].setAttribute("onclick", "alert('Hello');");
     document.getElementsByTagName("body")[0].appendChild(container);
 }
 
@@ -272,13 +291,9 @@ function erasebar() {
     }
 }
 
-document.onmousedown = (event) => {
-    erasebar();
-};
-
 document.onmouseup = (event) => {
     if (mark) {
-        mouseCapture();
+        mouseCapture(event);
     }
 };
 
