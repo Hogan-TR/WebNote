@@ -20,6 +20,17 @@ function mouseCapture(event) {
     // highlight(nodes);
 }
 
+function respButton() {
+    const sel = window.getSelection();
+    const range = sel.getRangeAt(0);
+    // save structure note data firstly
+    const data = structureNode(range);
+    saveSync(data);
+    // find intermediate node and render
+    const nodes = dfsNodes(range);
+    highlight(nodes);
+}
+
 function pageRender() {
     chrome.storage.sync.get(uri, (items) => {
         if (JSON.stringify(items) !== "{}" && items[uri]["mark"]) {
@@ -279,7 +290,7 @@ function injectbar(range) {
         btn_list.push(btn);
         container.appendChild(btn);
     }
-    btn_list[0].setAttribute("onclick", "alert('Hello');");
+    btn_list[0].setAttribute("onclick", "iacMsg('Highlight');");
     document.getElementsByTagName("body")[0].appendChild(container);
 }
 
@@ -291,6 +302,14 @@ function erasebar() {
     }
 }
 
+function injectjs(jsPath) {
+    jsPath = jsPath || "js/inject.js";
+    const temp = document.createElement("script");
+    temp.setAttribute("type", "text/javascript");
+    temp.src = chrome.extension.getURL(jsPath);
+    document.head.appendChild(temp);
+}
+
 document.onmouseup = (event) => {
     if (mark) {
         mouseCapture(event);
@@ -298,9 +317,11 @@ document.onmouseup = (event) => {
 };
 
 window.onload = () => {
+    injectjs();
     pageRender();
 };
 
+// communication between content-script and popup-script
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.type === "change") {
         mark = request.mark;
@@ -308,6 +329,19 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         sendResponse("success");
     } else if (request.type === "inquire") {
         sendResponse(mark);
+    }
+});
+
+// communication between content-script and inject-script
+window.addEventListener("message", (event) => {
+    let data = null;
+    if (typeof event.data === "string") {
+        data = JSON.parse(event.data);
+    } else {
+        data = event.data;
+    }
+    if ("wb_msg" in data) {
+        respButton();
     }
 });
 
