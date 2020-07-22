@@ -1,3 +1,3 @@
 function iacMsg(buttonType) {
-    window.postMessage({ wb_msg: buttonType });
+    window.postMessage({ wn_msg: buttonType });
 }
