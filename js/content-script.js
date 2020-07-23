@@ -21,6 +21,26 @@ String.prototype.format = function (args) {
     return result;
 };
 
+/* equal two Object */
+var deepEqual = function (x, y) {
+    if (x === y) {
+        return true;
+    } else if (
+        typeof x == "object" &&
+        x != null &&
+        typeof y == "object" &&
+        y != null
+    ) {
+        if (Object.keys(x).length != Object.keys(y).length) return false;
+        for (var prop in x) {
+            if (y.hasOwnProperty(prop)) {
+                if (!deepEqual(x[prop], y[prop])) return false;
+            } else return false;
+        }
+        return true;
+    } else return false;
+};
+
 /* global variable */
 const uri = window.location.href.replace(window.location.hash, "");
 let mark = false;
@@ -39,17 +59,80 @@ function mouseCapture(event) {
     injectbar(range, state);
 }
 
-function respButton(type) {
-    const id = uuid(10, 16);
+function respButton(data) {
     const sel = window.getSelection();
     const range = sel.getRangeAt(0);
-    // save structure note data firstly
-    const data = structureNode(range);
-    data["id"] = id;
-    saveSync(data);
-    // find intermediate node and render
-    const nodes = dfsNodes(range);
-    noterender(nodes, type, id);
+    const itemN = structureNode(range);
+    const node = range.startContainer.parentNode;
+    if (node.tagName === "SPAN" && node.hasAttribute("wn_id")) {
+        const wn_id = node.getAttribute("wn_id");
+        chrome.storage.sync.get(uri, (items) => {
+            const item = items[uri][notes][wn_id];
+            if (
+                deepEqual(item["startContainer"], itemN["startContainer"]) &&
+                deepEqual(item["endContainer"], itemN["endContainer"])
+            ) {
+                // historical selection area selected
+                if (data["switch"] === "false") {
+                    // add new property
+                    items[uri][notes][wn_id]["property"][data["wn_msg"]] = true;
+                    chrome.storage.sync.set(items, () => {
+                        chrome.storage.sync.get(null, (items) => {
+                            console.log("save note: " + items);
+                        });
+                    });
+                    // 渲染 - 选中元素添加style及属性
+                    // ...
+                    erasebar();
+                    return;
+                } else {
+                    // delete property or item
+                    let reservation = false;
+                    for (let key in item["property"]) {
+                        reservation = reservation || item["property"][key];
+                    }
+                    if (reservation) {
+                        items[uri][notes][wn_id]["property"][
+                            data["wn_msg"]
+                        ] = false;
+                        chrome.storage.sync.set(items, () => {
+                            chrome.storage.sync.get(null, (items) => {
+                                console.log("save note: " + items);
+                            });
+                        });
+                        // 渲染 - 选中元素删除部分style及属性
+                        // ...
+                        erasebar();
+                        return;
+                    } else {
+                        chrome.storage.sync.remove(uri, () => {
+                            chrome.storage.sync.get(null, (items) => {
+                                console.log("save note: " + items);
+                            });
+                        });
+                        // 渲染 - 选中元素删除style及属性
+                        // ...
+                        erasebar();
+                        return;
+                    }
+                }
+            }
+        });
+    }
+    // new item
+    if (data["switch"] === "false") {
+        const id = uuid(10, 16);
+        itemN["property"] = {
+            highlight: false,
+            bold: false,
+            italicize: false,
+            underline: false,
+            strike_through: false,
+        };
+        itemN["property"][data["wn_msg"]] = true;
+        saveSync(itemN, id);
+        // 渲染 - 创建新span node
+    }
     erasebar();
 }
 
@@ -58,7 +141,8 @@ function pageRender() {
         if (JSON.stringify(items) !== "{}" && items[uri]["mark"]) {
             mark = items[uri]["mark"];
             const data = items[uri]["notes"];
-            data.forEach((item) => {
+            for (let id in data) {
+                const item = data[id];
                 let start = antiNode(item["startContainer"]);
                 let end = antiNode(item["endContainer"]);
                 const range = {
@@ -68,8 +152,8 @@ function pageRender() {
                     endOffset: end["offset"],
                 };
                 const nodes = dfsNodes(range);
-                noterender(nodes, item["id"]);
-            });
+                noterender(nodes, id);
+            }
         }
     });
 }
@@ -129,18 +213,20 @@ function antiNode({ tagName, index, offset }) {
     return { node: curNode, offset: startOffset };
 }
 
-function saveSync(data) {
+function saveSync(data, id) {
     chrome.storage.sync.get(uri, (items) => {
         if (JSON.stringify(items) !== "{}") {
-            items[uri]["notes"].push(data);
+            items[uri]["notes"][id] = data;
             chrome.storage.sync.set(items, () => {
                 chrome.storage.sync.get(null, (items) => {
                     console.log("save note: " + items);
                 });
             });
         } else {
-            let iData = new Object();
-            iData[uri] = { mark: true, notes: [data] };
+            let iData = new Object(),
+                temp = new Object();
+            temp[id] = data;
+            iData[uri] = { mark: true, notes: temp };
             chrome.storage.sync.set(iData, () => {
                 chrome.storage.sync.get(null, (items) => {
                     console.log("save note: " + items);
@@ -249,30 +335,15 @@ function dfsNodes(range) {
     return resNodes; // return "Array"
 }
 
-function stateJudge(range) {
+function dfsWithoutSplit(range) {
     let nodeList = [];
     let resNodes = [];
     let curNode = null;
     let withS = false;
     let root = window.document;
-    const types = [
-        "highlight",
-        "bold",
-        "italicize",
-        "underline",
-        "strike_through",
-    ];
-    let property = {
-        highlight: true,
-        bold: true,
-        italicize: true,
-        underline: true,
-        strike_through: true,
-    };
+
     const startNode = range.startContainer;
-    const startOffset = range.startOffset;
     const endNode = range.endContainer;
-    const endOffset = range.endOffset;
 
     if (startNode === endNode) {
         if (startNode.nodeType === 3) {
@@ -300,6 +371,25 @@ function stateJudge(range) {
             }
         }
     }
+    return resNodes;
+}
+
+function stateJudge(range) {
+    const resNodes = dfsWithoutSplit(range);
+    const types = [
+        "highlight",
+        "bold",
+        "italicize",
+        "underline",
+        "strike_through",
+    ];
+    let property = {
+        highlight: true,
+        bold: true,
+        italicize: true,
+        underline: true,
+        strike_through: true,
+    };
 
     function isMatch(data) {
         return data.every((each) => {
@@ -417,7 +507,11 @@ function injectbar(range, state) {
         const btn = document.createElement("button");
         btn.setAttribute("type", "button");
         btn.setAttribute("class", "wn-btn");
-        btn.setAttribute("onclick", "iacMsg('{0}');".format(msg[i]));
+        btn.setAttribute("switch", state[msg[i]]);
+        btn.setAttribute(
+            "onclick",
+            "iacMsg('{0}', this.getAttribute('switch'));".format(msg[i])
+        );
         btn.insertAdjacentHTML("beforeend", svg_code[i]);
         btn_list.push(btn);
         container.appendChild(btn);
@@ -490,7 +584,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 window.addEventListener("message", (event) => {
     let data = event.data;
     if (data.hasOwnProperty("wn_msg")) {
-        respButton(data["wn_msg"]);
+        // Ex.data => {wn_msg: 'bold', switch: 'false'}
+        respButton(data);
     }
 });
 
