@@ -67,7 +67,8 @@ function respButton(data) {
     if (node.tagName === "SPAN" && node.hasAttribute("wn_id")) {
         const wn_id = node.getAttribute("wn_id");
         chrome.storage.sync.get(uri, (items) => {
-            const item = items[uri][notes][wn_id];
+            const item = items[uri]["notes"][wn_id];
+            console.log(item, itemN);
             if (
                 deepEqual(item["startContainer"], itemN["startContainer"]) &&
                 deepEqual(item["endContainer"], itemN["endContainer"])
@@ -82,7 +83,7 @@ function respButton(data) {
                         });
                     });
                     // 渲染 - 选中元素添加style及属性
-                    // ...
+                    noterender("add", wn_id, data["wn_msg"]);
                     erasebar();
                     return;
                 } else {
@@ -101,7 +102,7 @@ function respButton(data) {
                             });
                         });
                         // 渲染 - 选中元素删除部分style及属性
-                        // ...
+                        noterender("delete", wn_id, data["wn_msg"]);
                         erasebar();
                         return;
                     } else {
@@ -111,7 +112,7 @@ function respButton(data) {
                             });
                         });
                         // 渲染 - 选中元素删除style及属性
-                        // ...
+                        noterender("delete", wn_id, data["wn_msg"]);
                         erasebar();
                         return;
                     }
@@ -132,6 +133,8 @@ function respButton(data) {
         itemN["property"][data["wn_msg"]] = true;
         saveSync(itemN, id);
         // 渲染 - 创建新span node
+        const nodes = dfsNodes(range);
+        noterender("new", id, data["wn_msg"], nodes);
     }
     erasebar();
 }
@@ -152,7 +155,11 @@ function pageRender() {
                     endOffset: end["offset"],
                 };
                 const nodes = dfsNodes(range);
-                noterender(nodes, id);
+                let types = [];
+                for (let x in item["property"]) {
+                    if (item["property"][x]) types.push(x);
+                }
+                noterender("new", id, types.join(" "), nodes);
             }
         }
     });
@@ -428,26 +435,64 @@ function changeMark() {
     });
 }
 
-function noterender(nodes, type, id) {
+function noterender(mode, id, type, nodes) {
     const pre_style = {
-        highlight: "background: rgb(251, 243, 219)",
-        bold: "font-weight:600",
-        italicize: "font-style:italic",
+        highlight: "background: rgb(251, 243, 219);",
+        bold: "font-weight:600;",
+        italicize: "font-style:italic;",
         underline:
-            "color:inherit;border-bottom:0.05em solid;word-wrap:break-word",
-        strike_through: "text-decoration:line-through",
+            "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
+        strike_through: "text-decoration:line-through;",
     };
-    nodes.forEach((node) => {
-        if (!node || !node.textContent.length) {
-            return null;
+    switch (mode) {
+        case "new": {
+            nodes.forEach((node) => {
+                if (!node || !node.textContent.length) {
+                    return null;
+                }
+                let styles = "";
+                type.split(" ").forEach((each) => {
+                    styles += pre_style[each];
+                });
+                const wrap = document.createElement("span");
+                wrap.setAttribute("class", type);
+                wrap.setAttribute("style", styles);
+                wrap.setAttribute("wn_id", id);
+                wrap.appendChild(node.cloneNode(false));
+                node.parentNode.replaceChild(wrap, node);
+            });
+            break;
         }
-        const wrap = document.createElement("span");
-        wrap.setAttribute("class", type);
-        wrap.setAttribute("style", pre_style[type]);
-        wrap.setAttribute("wn_id", id);
-        wrap.appendChild(node.cloneNode(false));
-        node.parentNode.replaceChild(wrap, node);
-    });
+        case "add": {
+            let temp = document.getElementsByTagName("span");
+            for (let each of temp) {
+                if (each.getAttribute("wn_id") === id) {
+                    each.className += " {0}".format(type);
+                    each.setAttribute(
+                        "style",
+                        each.getAttribute("style") +
+                            " {0}".format(pre_style[type])
+                    );
+                }
+            }
+            break;
+        }
+        case "delete": {
+            let temp = document.getElementsByTagName("span");
+            for (let each of temp) {
+                if (each.getAttribute("wn_id") === id) {
+                    let cl = each.className.split(" ");
+                    let st = each.getAttribute("style");
+                    cl.filter((x) => {
+                        return x !== type;
+                    });
+                    each.setAttribute("class", cl.join(" "));
+                    each.setAttribute("style", st.replace(pre_style[type], ""));
+                }
+            }
+            break;
+        }
+    }
 }
 
 function isOnbar(event) {
