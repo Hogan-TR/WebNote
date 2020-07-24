@@ -21,26 +21,6 @@ String.prototype.format = function (args) {
     return result;
 };
 
-/* equal two Object */
-var deepEqual = function (x, y) {
-    if (x === y) {
-        return true;
-    } else if (
-        typeof x == "object" &&
-        x != null &&
-        typeof y == "object" &&
-        y != null
-    ) {
-        if (Object.keys(x).length != Object.keys(y).length) return false;
-        for (var prop in x) {
-            if (y.hasOwnProperty(prop)) {
-                if (!deepEqual(x[prop], y[prop])) return false;
-            } else return false;
-        }
-        return true;
-    } else return false;
-};
-
 /* global variable */
 const uri = window.location.href.replace(window.location.hash, "");
 let mark = false;
@@ -63,80 +43,72 @@ function respButton(data) {
     const sel = window.getSelection();
     const range = sel.getRangeAt(0);
     const itemN = structureNode(range);
-    const node = range.startContainer.parentNode;
-    if (node.tagName === "SPAN" && node.hasAttribute("wn_id")) {
-        const wn_id = node.getAttribute("wn_id");
-        chrome.storage.sync.get(uri, (items) => {
-            const item = items[uri]["notes"][wn_id];
-            console.log(item, itemN);
-            if (
-                deepEqual(item["startContainer"], itemN["startContainer"]) &&
-                deepEqual(item["endContainer"], itemN["endContainer"])
-            ) {
-                // historical selection area selected
-                if (data["switch"] === "false") {
-                    // add new property
-                    items[uri][notes][wn_id]["property"][data["wn_msg"]] = true;
-                    chrome.storage.sync.set(items, () => {
-                        chrome.storage.sync.get(null, (items) => {
-                            console.log("save note: " + items);
-                        });
+
+    let coincide = true;
+    let id = null,
+        len = 0;
+    const tests = dfsWithoutSplit(range);
+    tests.forEach((i) => {
+        let wn_id = i.getAttribute("wn_id");
+        if (id === null) id = wn_id;
+        if (i.tagName !== "SPAN" || !id || id !== wn_id) coincide = false;
+        id = wn_id;
+        len += i.textContent.length;
+    });
+    let sel_len = sel.toString().length;
+    if (sel_len !== len) coincide = false;
+
+    chrome.storage.sync.get(uri, (items) => {
+        if (coincide) {
+            // completely coincident
+            const item = items[uri]["notes"][id];
+            if (data["switch"] === "false") {
+                // add new property
+                items[uri]["notes"][id]["property"][data["wn_msg"]] = true;
+                chrome.storage.sync.set(items, () => {
+                    chrome.storage.sync.get(null, (items) => {
+                        console.log("modify note: " + items);
                     });
-                    // 渲染 - 选中元素添加style及属性
-                    noterender("add", wn_id, data["wn_msg"]);
-                    erasebar();
-                    return;
-                } else {
-                    // delete property or item
-                    let reservation = false;
-                    for (let key in item["property"]) {
-                        reservation = reservation || item["property"][key];
-                    }
-                    if (reservation) {
-                        items[uri][notes][wn_id]["property"][
-                            data["wn_msg"]
-                        ] = false;
-                        chrome.storage.sync.set(items, () => {
-                            chrome.storage.sync.get(null, (items) => {
-                                console.log("save note: " + items);
-                            });
-                        });
-                        // 渲染 - 选中元素删除部分style及属性
-                        noterender("delete", wn_id, data["wn_msg"]);
-                        erasebar();
-                        return;
-                    } else {
-                        chrome.storage.sync.remove(uri, () => {
-                            chrome.storage.sync.get(null, (items) => {
-                                console.log("save note: " + items);
-                            });
-                        });
-                        // 渲染 - 选中元素删除style及属性
-                        noterender("delete", wn_id, data["wn_msg"]);
-                        erasebar();
-                        return;
-                    }
+                });
+                noterender("add", id, data["wn_msg"]);
+            } else {
+                // delete property or item
+                items[uri]["notes"][id]["property"][data["wn_msg"]] = false;
+                let reservation = false;
+                for (let key in item["property"]) {
+                    reservation = reservation || item["property"][key];
                 }
+                if (!reservation) {
+                    delete items[uri]["notes"][id];
+                }
+                chrome.storage.sync.set(items, () => {
+                    chrome.storage.sync.get(null, (items) => {
+                        console.log("modify note: " + items);
+                    });
+                });
+                noterender("delete", id, data["wn_msg"]);
             }
-        });
-    }
-    // new item
-    if (data["switch"] === "false") {
-        const id = uuid(10, 16);
-        itemN["property"] = {
-            highlight: false,
-            bold: false,
-            italicize: false,
-            underline: false,
-            strike_through: false,
-        };
-        itemN["property"][data["wn_msg"]] = true;
-        saveSync(itemN, id);
-        // 渲染 - 创建新span node
-        const nodes = dfsNodes(range);
-        noterender("new", id, data["wn_msg"], nodes);
-    }
-    erasebar();
+            erasebar();
+            return;
+        }
+        // new item
+        if (data["switch"] === "false") {
+            id = uuid(10, 16);
+            itemN["property"] = {
+                hl: false,
+                bold: false,
+                italicize: false,
+                underline: false,
+                strike_through: false,
+            };
+            itemN["property"][data["wn_msg"]] = true;
+            saveSync(itemN, id);
+            // 渲染 - 创建新span node
+            const nodes = dfsNodes(range);
+            noterender("new", id, data["wn_msg"], nodes);
+        }
+        erasebar();
+    });
 }
 
 function pageRender() {
@@ -383,15 +355,9 @@ function dfsWithoutSplit(range) {
 
 function stateJudge(range) {
     const resNodes = dfsWithoutSplit(range);
-    const types = [
-        "highlight",
-        "bold",
-        "italicize",
-        "underline",
-        "strike_through",
-    ];
+    const types = ["hl", "bold", "italicize", "underline", "strike_through"];
     let property = {
-        highlight: true,
+        hl: true,
         bold: true,
         italicize: true,
         underline: true,
@@ -407,7 +373,7 @@ function stateJudge(range) {
         const data = node.className.split(" ");
         if (node.tagName !== "SPAN" || !isMatch(data)) {
             return {
-                highlight: false,
+                hl: false,
                 bold: false,
                 italicize: false,
                 underline: false,
@@ -437,7 +403,7 @@ function changeMark() {
 
 function noterender(mode, id, type, nodes) {
     const pre_style = {
-        highlight: "background: rgb(251, 243, 219);",
+        hl: "background: rgb(251, 243, 219);",
         bold: "font-weight:600;",
         italicize: "font-style:italic;",
         underline:
@@ -483,10 +449,10 @@ function noterender(mode, id, type, nodes) {
                 if (each.getAttribute("wn_id") === id) {
                     let cl = each.className.split(" ");
                     let st = each.getAttribute("style");
-                    cl.filter((x) => {
+                    let cl_new = cl.filter((x) => {
                         return x !== type;
                     });
-                    each.setAttribute("class", cl.join(" "));
+                    each.setAttribute("class", cl_new.join(" "));
                     each.setAttribute("style", st.replace(pre_style[type], ""));
                 }
             }
@@ -524,16 +490,10 @@ function injectbar(range, state) {
         )
     );
     const btn_list = [];
-    const msg = [
-        "highlight",
-        "bold",
-        "italicize",
-        "underline",
-        "strike_through",
-    ];
+    const msg = ["hl", "bold", "italicize", "underline", "strike_through"];
     const svg_code = [
         '<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-brightness-high-fill" fill="{0}" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/><path fill-rule="evenodd" d="M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/></svg>'.format(
-            state["highlight"] ? "rgb(46 170 220)" : "currentColor"
+            state["hl"] ? "rgb(46 170 220)" : "currentColor"
         ),
         '<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-type-bold" fill="{0}" xmlns="http://www.w3.org/2000/svg"><path d="M8.21 13c2.106 0 3.412-1.087 3.412-2.823 0-1.306-.984-2.283-2.324-2.386v-.055a2.176 2.176 0 0 0 1.852-2.14c0-1.51-1.162-2.46-3.014-2.46H3.843V13H8.21zM5.908 4.674h1.696c.963 0 1.517.451 1.517 1.244 0 .834-.629 1.32-1.73 1.32H5.908V4.673zm0 6.788V8.598h1.73c1.217 0 1.88.492 1.88 1.415 0 .943-.643 1.449-1.832 1.449H5.907z"/></svg>'.format(
             state["bold"] ? "rgb(46 170 220)" : "currentColor"
