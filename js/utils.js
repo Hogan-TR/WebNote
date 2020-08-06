@@ -21,8 +21,14 @@ String.prototype.format = function (args) {
     return result;
 };
 
-/* generate unique id */
-function uuid(len, radix) {
+/**
+ * generate unique id
+ * @param {string} type property value(id prefix)
+ * @param {number} len length of id suffix
+ * @param {number} radix base unit of uuid
+ * @returns {string} full id
+ */
+function uuid(type, len, radix) {
     var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split(
         ""
     );
@@ -42,5 +48,5 @@ function uuid(len, radix) {
             }
         }
     }
-    return uuid.join("");
+    return type + uuid.join("");
 }

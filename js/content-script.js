@@ -2,18 +2,26 @@
 const uri = window.location.href.replace(window.location.hash, "");
 let mark = false;
 
+/**
+ * capture and response to mouseup
+ * @param {object} event mouse-event
+ * @returns directly return when don't need inject new bar
+ */
 function mouseCapture(event) {
     const sel = window.getSelection();
-    if (!sel.toString().length) {
-        erasebar();
-        return;
-    } else if (isOnbar(event)) {
-        return;
-    }
+    // if (!sel.toString().length) {
+    //     erasebar();
+    //     return;
+    // } else if (isOnbar(event)) {
+    //     // click bar to note
+    //     return;
+    // }
     const range = sel.getRangeAt(0);
     let state = stateJudge(range);
-    erasebar();
-    injectbar(range, state);
+    // erasebar();
+    // injectbar(range, state);
+
+    console.log(dfsNodes(range));
 }
 
 function respButton(data) {
@@ -21,71 +29,71 @@ function respButton(data) {
     const range = sel.getRangeAt(0);
     const itemN = structureNode(range);
 
-    let coincide = true;
-    let id = null,
-        len = 0;
-    const tests = dfsWithoutSplit(range);
-    tests.forEach((i) => {
-        let wn_id = i.getAttribute("wn_id");
-        if (id === null) id = wn_id;
-        if (i.tagName !== "SPAN" || !id || id !== wn_id) coincide = false;
-        id = wn_id;
-        len += i.textContent.length;
-    });
-    let sel_len = sel.toString().length;
-    if (sel_len !== len) coincide = false;
+    // let coincide = true;
+    // let id = null,
+    //     len = 0;
+    // const tests = dfsWithoutSplit(range);
+    // tests.forEach((i) => {
+    //     let wn_id = i.getAttribute("wn_id");
+    //     if (id === null) id = wn_id;
+    //     if (i.tagName !== "SPAN" || !id || id !== wn_id) coincide = false;
+    //     id = wn_id;
+    //     len += i.textContent.length;
+    // });
+    // let sel_len = sel.toString().length;
+    // if (sel_len !== len) coincide = false;
 
-    chrome.storage.sync.get(uri, (items) => {
-        if (coincide) {
-            // completely coincident
-            const item = items[uri]["notes"][id];
-            if (data["switch"] === "false") {
-                // add new property
-                items[uri]["notes"][id]["property"][data["wn_msg"]] = true;
-                chrome.storage.sync.set(items, () => {
-                    chrome.storage.sync.get(null, (items) => {
-                        console.log("modify note: " + items);
-                    });
-                });
-                noterender("add", id, data["wn_msg"]);
-            } else {
-                // delete property or item
-                items[uri]["notes"][id]["property"][data["wn_msg"]] = false;
-                let reservation = false;
-                for (let key in item["property"]) {
-                    reservation = reservation || item["property"][key];
-                }
-                if (!reservation) {
-                    delete items[uri]["notes"][id];
-                }
-                chrome.storage.sync.set(items, () => {
-                    chrome.storage.sync.get(null, (items) => {
-                        console.log("modify note: " + items);
-                    });
-                });
-                noterender("delete", id, data["wn_msg"]);
-            }
-            erasebar();
-            return;
-        }
-        // new item
-        if (data["switch"] === "false") {
-            id = uuid(10, 16);
-            itemN["property"] = {
-                hl: false,
-                bold: false,
-                italicize: false,
-                underline: false,
-                strike_through: false,
-            };
-            itemN["property"][data["wn_msg"]] = true;
-            saveSync(itemN, id);
-            // 渲染 - 创建新span node
-            const nodes = dfsNodes(range);
-            noterender("new", id, data["wn_msg"], nodes);
-        }
-        erasebar();
-    });
+    // chrome.storage.sync.get(uri, (items) => {
+    //     if (coincide) {
+    //         // completely coincident
+    //         const item = items[uri]["notes"][id];
+    //         if (data["switch"] === "false") {
+    //             // add new property
+    //             items[uri]["notes"][id]["property"][data["wn_msg"]] = true;
+    //             chrome.storage.sync.set(items, () => {
+    //                 chrome.storage.sync.get(null, (items) => {
+    //                     console.log("modify note: " + items);
+    //                 });
+    //             });
+    //             noterender("add", id, data["wn_msg"]);
+    //         } else {
+    //             // delete property or item
+    //             items[uri]["notes"][id]["property"][data["wn_msg"]] = false;
+    //             let reservation = false;
+    //             for (let key in item["property"]) {
+    //                 reservation = reservation || item["property"][key];
+    //             }
+    //             if (!reservation) {
+    //                 delete items[uri]["notes"][id];
+    //             }
+    //             chrome.storage.sync.set(items, () => {
+    //                 chrome.storage.sync.get(null, (items) => {
+    //                     console.log("modify note: " + items);
+    //                 });
+    //             });
+    //             noterender("delete", id, data["wn_msg"]);
+    //         }
+    //         erasebar();
+    //         return;
+    //     }
+    //     // new item
+    //     if (data["switch"] === "false") {
+    //         id = uuid(10, 16);
+    //         itemN["property"] = {
+    //             hl: false,
+    //             bold: false,
+    //             italicize: false,
+    //             underline: false,
+    //             strike_through: false,
+    //         };
+    //         itemN["property"][data["wn_msg"]] = true;
+    //         saveSync(itemN, id);
+    //         // 渲染 - 创建新span node
+    //         const nodes = dfsNodes(range);
+    //         noterender("new", id, data["wn_msg"], nodes);
+    //     }
+    //     erasebar();
+    // });
 }
 
 function pageRender() {
@@ -114,6 +122,11 @@ function pageRender() {
     });
 }
 
+/**
+ * structure storage data with range
+ * @param {object} range include container and offset
+ * @returns {object} include startContainer and endContainer
+ */
 function structureNode(range) {
     // extract data of start & end nodes
     const startNode = range.startContainer;
@@ -169,23 +182,29 @@ function antiNode({ tagName, index, offset }) {
     return { node: curNode, offset: startOffset };
 }
 
+/**
+ * storage data to 'chrome.storage'
+ * @param {object} data data that need to be storaged
+ * @param {string} id unique identifier
+ */
 function saveSync(data, id) {
     chrome.storage.sync.get(uri, (items) => {
         if (JSON.stringify(items) !== "{}") {
             items[uri]["notes"][id] = data;
             chrome.storage.sync.set(items, () => {
                 chrome.storage.sync.get(null, (items) => {
-                    console.log("save note: " + items);
+                    console.log("save note(new item): " + items);
                 });
             });
         } else {
+            // no previous record
             let iData = new Object(),
                 temp = new Object();
             temp[id] = data;
             iData[uri] = { mark: true, notes: temp };
             chrome.storage.sync.set(iData, () => {
                 chrome.storage.sync.get(null, (items) => {
-                    console.log("save note: " + items);
+                    console.log("save note(new web): " + items);
                 });
             });
         }
@@ -237,13 +256,22 @@ function dfsNodes(range) {
     const endOffset = range.endOffset;
 
     // just one node
-    if (startNode === endNode) {
-        if (startNode.nodeType === 3) {
-            startNode.splitText(startOffset);
-            let nextNode = startNode.nextSibling;
-            nextNode.splitText(endOffset - startOffset);
-            return [nextNode];
+    if (startNode === endNode && startNode.nodeType === 3) {
+        if (startNode.length === endOffset - startOffset) {
+            // complete overlap, no need to split
+            return [startNode];
+        } else if (!startOffset) {
+            // cut the first part
+            return [startNode.splitText(endOffset).previousSibling];
+        } else if (startNode.length === endOffset) {
+            // cut the next part
+            return [startNode.splitText(startOffset)];
         }
+        // cut the middle part
+        startNode.splitText(startOffset);
+        let nextNode = startNode.nextSibling;
+        nextNode.splitText(endOffset - startOffset);
+        return [nextNode];
     }
 
     let nodeList = []; // Stack Traversed
@@ -267,20 +295,23 @@ function dfsNodes(range) {
         // (..rawNode..|..newNode..)
         // rawNode -> first part
         // newNode -> latter part
-        if (curNode === startNode) {
-            if (curNode.nodeType === 3) {
+        if (curNode === startNode && curNode.nodeType === 3) {
+            if (!startOffset) {
+                // no need to split
+                resNodes.push(curNode);
+            } else {
                 curNode.splitText(startOffset);
                 // get the part after offset
                 resNodes.push(curNode.nextSibling);
             }
             // start record
             withS = true;
-        } else if (curNode === endNode) {
-            if (curNode.nodeType === 3) {
+        } else if (curNode === endNode && curNode.nodeType === 3) {
+            if (endNode.length !== endOffset) {
                 curNode.splitText(endOffset);
-                // get the part before offset
-                resNodes.push(curNode);
             }
+            // get the part before offset
+            resNodes.push(curNode);
             // end record
             break;
         } else if (withS && curNode.nodeType === 3) {
@@ -330,6 +361,11 @@ function dfsWithoutSplit(range) {
     return resNodes;
 }
 
+/**
+ * determine what attributes the selected nodes have
+ * @param {object} range
+ * @returns {object} return 'property' which records the various attributes
+ */
 function stateJudge(range) {
     const resNodes = dfsWithoutSplit(range);
     const types = ["hl", "bold", "italicize", "underline", "strike_through"];
@@ -438,6 +474,11 @@ function noterender(mode, id, type, nodes) {
     }
 }
 
+/**
+ * determine the range of mouse clicks
+ * @param {object} event event object
+ * @returns {boolean} is or not in range
+ */
 function isOnbar(event) {
     const bar = document.getElementsByClassName("note-bar");
     if (!bar.length) return false;
