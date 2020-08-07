@@ -9,26 +9,36 @@ let mark = false;
  */
 function mouseCapture(event) {
     const sel = window.getSelection();
-    // if (!sel.toString().length) {
-    //     erasebar();
-    //     return;
-    // } else if (isOnbar(event)) {
-    //     // click bar to note
-    //     return;
-    // }
+    if (!sel.toString().length) {
+        erasebar();
+        return;
+    } else if (isOnbar(event)) {
+        // click bar to note
+        return;
+    }
     const range = sel.getRangeAt(0);
     let state = stateJudge(range);
-    // erasebar();
-    // injectbar(range, state);
-
-    console.log(dfsNodes(range));
+    erasebar();
+    injectbar(range, state);
 }
 
+/**
+ * response to notebar button click
+ * @param {string} data.wn_msg describe button type
+ * @param {string} data.switch the status of button
+ */
 function respButton(data) {
     const sel = window.getSelection();
     const range = sel.getRangeAt(0);
-    const itemN = structureNode(range);
 
+    if (data["switch"] === "false") {
+        const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
+        let nodes = dfsNodes(range);
+        n2(id, data["wn_msg"], nodes);
+    }
+    erasebar();
+
+    // const itemN = structureNode(range);
     // let coincide = true;
     // let id = null,
     //     len = 0;
@@ -122,11 +132,6 @@ function pageRender() {
     });
 }
 
-/**
- * structure storage data with range
- * @param {object} range include container and offset
- * @returns {object} include startContainer and endContainer
- */
 function structureNode(range) {
     // extract data of start & end nodes
     const startNode = range.startContainer;
@@ -248,6 +253,11 @@ function getBroadoffset(parentNode, textNode) {
     return offset;
 }
 
+/**
+ * rational slicing of the nodes
+ * @param {object} range
+ * @returns {object[]} array of splited nodes
+ */
 function dfsNodes(range) {
     // extract data of S & E
     const startNode = range.startContainer;
@@ -319,7 +329,7 @@ function dfsNodes(range) {
             resNodes.push(curNode);
         }
     }
-    return resNodes; // return "Array"
+    return resNodes;
 }
 
 function dfsWithoutSplit(range) {
@@ -410,6 +420,70 @@ function changeMark() {
                 location.reload();
                 console.log("change mark: " + mark);
             });
+        }
+    });
+}
+
+/**
+ * dom renderer
+ * @param {string} id item's unique tag
+ * @param {string} type property of nodes
+ * @param {object[]} nodes nodes need to deal with
+ */
+function n2(id, type, nodes) {
+    const pre_style = {
+        hl: "background: rgb(251, 243, 219);",
+        bold: "font-weight:600;",
+        italicize: "font-style:italic;",
+        underline:
+            "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
+        strike_through: "text-decoration:line-through;",
+    };
+
+    nodes.forEach((node) => {
+        let pe = node.parentElement;
+        if (pe.tagName === "SPAN" && pe.getAttribute("wn_id")) {
+            // wrapped node
+            if (pe.childNodes.length === 1) {
+                // full span node
+                pe.className += " {0}".format(type);
+                pe.setAttribute(
+                    "wn_id",
+                    pe.getAttribute("wn_id") + " {0}".format(id)
+                );
+                pe.setAttribute(
+                    "style",
+                    pe.getAttribute("style") + " {0}".format(pre_style[type])
+                );
+            } else {
+                // split span nodes
+                pe.childNodes.forEach((child, index) => {
+                    const wrap = pe.cloneNode(false);
+                    wrap.appendChild(child.cloneNode(false));
+                    if (node === child) {
+                        wrap.className += " {0}".format(type);
+                        wrap.setAttribute(
+                            "wn_id",
+                            wrap.getAttribute("wn_id") + " {0}".format(id)
+                        );
+                        wrap.setAttribute(
+                            "style",
+                            wrap.getAttribute("style") +
+                                " {0}".format(pre_style[type])
+                        );
+                    }
+                    pe.parentElement.insertBefore(wrap, pe);
+                });
+                pe.parentElement.removeChild(pe);
+            }
+        } else {
+            // new splited-node need to wrapper 
+            const wrap = document.createElement("span");
+            wrap.setAttribute("wn_id", id);
+            wrap.setAttribute("class", type);
+            wrap.setAttribute("style", pre_style[type]);
+            wrap.appendChild(node.cloneNode(false));
+            pe.replaceChild(wrap, node);
         }
     });
 }
