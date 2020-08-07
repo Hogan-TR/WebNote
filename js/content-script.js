@@ -33,6 +33,8 @@ function respButton(data) {
 
     if (data["switch"] === "false") {
         const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
+        let structItem = structureNode(range);
+        saveSync(structItem, id);
         let nodes = dfsNodes(range);
         n2(id, data["wn_msg"], nodes);
     }
@@ -106,12 +108,24 @@ function respButton(data) {
     // });
 }
 
+/**
+ * render page when reload
+ */
 function pageRender() {
+    const pre_trans = {
+        H: "hl",
+        B: "bold",
+        I: "italicize",
+        U: "underline",
+        S: "strike_through",
+    };
+
     chrome.storage.sync.get(uri, (items) => {
         if (JSON.stringify(items) !== "{}" && items[uri]["mark"]) {
             mark = items[uri]["mark"];
             const data = items[uri]["notes"];
             for (let id in data) {
+                const type = pre_trans[id[0]];
                 const item = data[id];
                 let start = antiNode(item["startContainer"]);
                 let end = antiNode(item["endContainer"]);
@@ -122,16 +136,17 @@ function pageRender() {
                     endOffset: end["offset"],
                 };
                 const nodes = dfsNodes(range);
-                let types = [];
-                for (let x in item["property"]) {
-                    if (item["property"][x]) types.push(x);
-                }
-                noterender("new", id, types.join(" "), nodes);
+                n2(id, type, nodes);
             }
         }
     });
 }
 
+/**
+ * structure storage data with range
+ * @param {object} range include container and offset
+ * @returns {object} include startContainer and endContainer
+ */
 function structureNode(range) {
     // extract data of start & end nodes
     const startNode = range.startContainer;
@@ -160,6 +175,13 @@ function structureNode(range) {
     };
 }
 
+/**
+ * deserialize nodes
+ * @param {string} object.tagName tag name of node
+ * @param {number} object.index index of node in "document"
+ * @param {number} object.offset offset value of textnode
+ * @returns {object} return "range" object
+ */
 function antiNode({ tagName, index, offset }) {
     const root = window.document;
     const parent = root.getElementsByTagName(tagName)[index];
@@ -216,9 +238,22 @@ function saveSync(data, id) {
     });
 }
 
+/**
+ * structurally locate the "parent" element
+ * @param {object} textNode TextNode object of DOM
+ * @returns {object} include node, tagName and index
+ */
 function parentNode(textNode) {
+    let node = textNode;
+    while (
+        node.parentElement.tagName === "SPAN" &&
+        node.parentElement.getAttribute("wn_id")
+    ) {
+        node = node.parentElement;
+    }
+    node = node.parentElement;
+
     const root = window.document;
-    const node = textNode.parentElement;
     const tagName = node.tagName;
     const tagList = root.getElementsByTagName(tagName);
 
@@ -231,6 +266,12 @@ function parentNode(textNode) {
     return { node, tagName, index: -1 };
 }
 
+/**
+ * transfer with "global" offset
+ * @param {object} parentNode
+ * @param {object} textNode
+ * @returns {number} offset in parent
+ */
 function getBroadoffset(parentNode, textNode) {
     const nodeStack = [parentNode];
     let curNode = null;
@@ -412,6 +453,9 @@ function stateJudge(range) {
     return property;
 }
 
+/**
+ * control running of plugin
+ */
 function changeMark() {
     chrome.storage.sync.get(uri, (items) => {
         if (JSON.stringify(items) !== "{}") {
@@ -477,7 +521,7 @@ function n2(id, type, nodes) {
                 pe.parentElement.removeChild(pe);
             }
         } else {
-            // new splited-node need to wrapper 
+            // new splited-node need to wrapper
             const wrap = document.createElement("span");
             wrap.setAttribute("wn_id", id);
             wrap.setAttribute("class", type);
@@ -569,6 +613,11 @@ function isOnbar(event) {
     else return false;
 }
 
+/**
+ * render and pop up note-bar
+ * @param {object} ragne use to positioning note-bar
+ * @param {object} state show attributes of selected text
+ */
 function injectbar(range, state) {
     let data = range.getBoundingClientRect();
     // outmost shell
@@ -616,6 +665,9 @@ function injectbar(range, state) {
     document.getElementsByTagName("body")[0].appendChild(container);
 }
 
+/**
+ * erase note-bar from page
+ */
 function erasebar() {
     const self = document.getElementsByClassName("note-bar")[0];
     if (self) {
@@ -624,6 +676,9 @@ function erasebar() {
     }
 }
 
+/**
+ * inject js file
+ */
 function injectjs(jsPath) {
     jsPath = jsPath || "js/inject.js";
     const temp = document.createElement("script");
