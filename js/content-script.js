@@ -34,9 +34,21 @@ function respButton(data) {
     if (data["switch"] === "false") {
         const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
         let structItem = structureNode(range);
-        saveSync(structItem, id);
+        saveSync(structItem, id, "new");
         let nodes = dfsNodes(range);
         n2(id, data["wn_msg"], nodes);
+    } else {
+        let id = null,
+            id_list = range.startContainer.parentElement
+                .getAttribute("wn_id")
+                .split(" ");
+        for (id of id_list) {
+            if (id[0] === data["wn_msg"][0].toUpperCase()) {
+                break;
+            }
+        }
+        let structItem = structureNode(range);
+        saveSync(structItem, id, "change");
     }
     erasebar();
 
@@ -213,27 +225,43 @@ function antiNode({ tagName, index, offset }) {
  * storage data to 'chrome.storage'
  * @param {object} data data that need to be storaged
  * @param {string} id unique identifier
+ * @param {string} option different saving function
  */
-function saveSync(data, id) {
+function saveSync(data, id, option) {
     chrome.storage.sync.get(uri, (items) => {
-        if (JSON.stringify(items) !== "{}") {
-            items[uri]["notes"][id] = data;
-            chrome.storage.sync.set(items, () => {
-                chrome.storage.sync.get(null, (items) => {
-                    console.log("save note(new item): " + items);
+        switch (option) {
+            case "new":
+                if (JSON.stringify(items) !== "{}") {
+                    items[uri]["notes"][id] = data;
+                    chrome.storage.sync.set(items, () => {
+                        chrome.storage.sync.get(null, (items) => {
+                            console.log("save note(new item): " + items);
+                        });
+                    });
+                } else {
+                    // no previous record
+                    let iData = new Object(),
+                        temp = new Object();
+                    temp[id] = data;
+                    iData[uri] = { mark: true, notes: temp };
+                    chrome.storage.sync.set(iData, () => {
+                        chrome.storage.sync.get(null, (items) => {
+                            console.log("save note(new web): " + items);
+                        });
+                    });
+                }
+                break;
+            case "change":
+                const item = items[uri]["notes"][id];
+                if (deepCompare(item, data)) {
+                    delete items[uri]["notes"][id];
+                }
+                chrome.storage.sync.set(items, () => {
+                    chrome.storage.sync.get(null, (items) => {
+                        console.log("modify note: " + items);
+                    });
                 });
-            });
-        } else {
-            // no previous record
-            let iData = new Object(),
-                temp = new Object();
-            temp[id] = data;
-            iData[uri] = { mark: true, notes: temp };
-            chrome.storage.sync.set(iData, () => {
-                chrome.storage.sync.get(null, (items) => {
-                    console.log("save note(new web): " + items);
-                });
-            });
+                break;
         }
     });
 }
