@@ -255,6 +255,21 @@ function saveSync(data, id, option) {
                 const item = items[uri]["notes"][id];
                 if (deepCompare(item, data)) {
                     delete items[uri]["notes"][id];
+                } else if (
+                    deepCompare(item["startContainer"], data["startContainer"])
+                ) {
+                    item["startContainer"] = data["endContainer"];
+                } else if (
+                    deepCompare(item["endContainer"], data["endContainer"])
+                ) {
+                    item["endContainer"] = data["startContainer"];
+                } else {
+                    let item_cp = JSON.parse(JSON.stringify(item));
+                    item["endContainer"] = data["startContainer"];
+                    item_cp["startContainer"] = data["endContainer"];
+                    items[uri]["notes"][
+                        "{0}{1}".format(id[0], uuid("", 10, 16))
+                    ] = item_cp;
                 }
                 chrome.storage.sync.set(items, () => {
                     chrome.storage.sync.get(null, (items) => {
