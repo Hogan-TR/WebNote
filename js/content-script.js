@@ -210,7 +210,13 @@ function antiNode({ tagName, index, offset }) {
         if (curNode.nodeType === 3) {
             startOffset = offset - curOffset;
             curOffset += curNode.textContent.length;
-            if (curOffset >= offset) {
+            if (
+                curOffset >= offset &&
+                !(
+                    curNode.parentElement.tagName === "SPAN" &&
+                    curNode.parentElement.getAttribute("wn_id")
+                )
+            ) {
                 break;
             }
         }
