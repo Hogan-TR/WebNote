@@ -36,7 +36,7 @@ function respButton(data) {
         let structItem = structureNode(range);
         saveSync(structItem, id, "new");
         let nodes = dfsNodes(range);
-        n2(id, data["wn_msg"], nodes);
+        markrender(id, data["wn_msg"], nodes);
     } else {
         let id = null,
             id_list = range.startContainer.parentElement
@@ -48,7 +48,10 @@ function respButton(data) {
             }
         }
         let structItem = structureNode(range);
-        saveSync(structItem, id, "change");
+        let tp_id = "{0}{1}".format(id[0], uuid("", 10, 16));
+        saveSync(structItem, id, "change", tp_id);
+        let nodes = dfsNodes(range);
+        unmarkrender(id, data["wn_msg"], nodes);
     }
     erasebar();
 
@@ -148,7 +151,7 @@ function pageRender() {
                     endOffset: end["offset"],
                 };
                 const nodes = dfsNodes(range);
-                n2(id, type, nodes);
+                markrender(id, type, nodes);
             }
         }
     });
@@ -210,13 +213,7 @@ function antiNode({ tagName, index, offset }) {
         if (curNode.nodeType === 3) {
             startOffset = offset - curOffset;
             curOffset += curNode.textContent.length;
-            if (
-                curOffset >= offset &&
-                !(
-                    curNode.parentElement.tagName === "SPAN" &&
-                    curNode.parentElement.getAttribute("wn_id")
-                )
-            ) {
+            if (curOffset >= offset) {
                 break;
             }
         }
@@ -232,8 +229,9 @@ function antiNode({ tagName, index, offset }) {
  * @param {object} data data that need to be storaged
  * @param {string} id unique identifier
  * @param {string} option different saving function
+ * @param {string} tp_id partly used
  */
-function saveSync(data, id, option) {
+function saveSync(data, id, option, tp_id) {
     chrome.storage.sync.get(uri, (items) => {
         switch (option) {
             case "new":
@@ -273,9 +271,7 @@ function saveSync(data, id, option) {
                     let item_cp = JSON.parse(JSON.stringify(item));
                     item["endContainer"] = data["startContainer"];
                     item_cp["startContainer"] = data["endContainer"];
-                    items[uri]["notes"][
-                        "{0}{1}".format(id[0], uuid("", 10, 16))
-                    ] = item_cp;
+                    items[uri]["notes"][tp_id] = item_cp;
                 }
                 chrome.storage.sync.set(items, () => {
                     chrome.storage.sync.get(null, (items) => {
@@ -518,12 +514,12 @@ function changeMark() {
 }
 
 /**
- * dom renderer
+ * dom mark-renderer
  * @param {string} id item's unique tag
  * @param {string} type property of nodes
  * @param {object[]} nodes nodes need to deal with
  */
-function n2(id, type, nodes) {
+function markrender(id, type, nodes) {
     const pre_style = {
         hl: "background: rgb(251, 243, 219);",
         bold: "font-weight:600;",
@@ -550,7 +546,7 @@ function n2(id, type, nodes) {
                 );
             } else {
                 // split span nodes
-                pe.childNodes.forEach((child, index) => {
+                pe.childNodes.forEach((child) => {
                     const wrap = pe.cloneNode(false);
                     wrap.appendChild(child.cloneNode(false));
                     if (node === child) {
@@ -577,6 +573,71 @@ function n2(id, type, nodes) {
             wrap.setAttribute("style", pre_style[type]);
             wrap.appendChild(node.cloneNode(false));
             pe.replaceChild(wrap, node);
+        }
+    });
+}
+
+/**
+ * dom unmark-renderer
+ * @param {string} id item's unique tag
+ * @param {string} type property of nodes
+ * @param {object[]} nodes nodes need to unmark
+ */
+function unmarkrender(id, type, nodes) {
+    const pre_style = {
+        hl: "background: rgb(251, 243, 219);",
+        bold: "font-weight:600;",
+        italicize: "font-style:italic;",
+        underline:
+            "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
+        strike_through: "text-decoration:line-through;",
+    };
+
+    /* check if there are other properties to decide dom-operation */
+    function hasOtherProperty(node) {
+        let id_list = node.getAttribute("wn_id").split(" ");
+        return id_list.length !== 1;
+    }
+
+    /* modify properties of span element */
+    function updateSpan(pe) {
+        let ids = pe.getAttribute("wn_id").split(" ");
+        let cl = pe.className.split(" ");
+        let st = pe.getAttribute("style");
+
+        let ids_new = ids.filter((x) => {
+            return x != id;
+        });
+        let cl_new = cl.filter((x) => {
+            return x !== type;
+        });
+        pe.setAttribute("wn_id", ids_new.join(" "));
+        pe.setAttribute("class", cl_new.join(" "));
+        pe.setAttribute("style", st.replace(pre_style[type], ""));
+    }
+
+    nodes.forEach((node) => {
+        let pe = node.parentElement;
+        if (pe.childNodes.length === 1) {
+            if (hasOtherProperty(pe)) {
+                updateSpan(pe);
+            } else {
+                pe.parentElement.replaceChild(node, pe);
+            }
+        } else {
+            pe.childNodes.forEach((child) => {
+                let wrap = pe.cloneNode(false);
+                wrap.appendChild(child.cloneNode(false));
+                if (node === child) {
+                    if (hasOtherProperty(wrap)) {
+                        updateSpan(pe);
+                    } else {
+                        wrap = node.cloneNode(false);
+                    }
+                }
+                pe.parentElement.insertBefore(wrap, pe);
+            });
+            pe.parentElement.removeChild(pe);
         }
     });
 }
