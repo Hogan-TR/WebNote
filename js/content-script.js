@@ -36,7 +36,7 @@ function respButton(data) {
         let structItem = structureNode(range);
         saveSync(structItem, id, "new");
         let nodes = dfsNodes(range);
-        markrender(id, data["wn_msg"], nodes);
+        markRender(id, data["wn_msg"], nodes);
     } else {
         let id = null,
             id_list = range.startContainer.parentElement
@@ -51,76 +51,9 @@ function respButton(data) {
         let tp_id = "{0}{1}".format(id[0], uuid("", 10, 16));
         saveSync(structItem, id, "change", tp_id);
         let nodes = dfsNodes(range);
-        unmarkrender(id, data["wn_msg"], nodes);
+        unmarkRender(id, data["wn_msg"], nodes);
     }
     erasebar();
-
-    // const itemN = structureNode(range);
-    // let coincide = true;
-    // let id = null,
-    //     len = 0;
-    // const tests = dfsWithoutSplit(range);
-    // tests.forEach((i) => {
-    //     let wn_id = i.getAttribute("wn_id");
-    //     if (id === null) id = wn_id;
-    //     if (i.tagName !== "SPAN" || !id || id !== wn_id) coincide = false;
-    //     id = wn_id;
-    //     len += i.textContent.length;
-    // });
-    // let sel_len = sel.toString().length;
-    // if (sel_len !== len) coincide = false;
-
-    // chrome.storage.sync.get(uri, (items) => {
-    //     if (coincide) {
-    //         // completely coincident
-    //         const item = items[uri]["notes"][id];
-    //         if (data["switch"] === "false") {
-    //             // add new property
-    //             items[uri]["notes"][id]["property"][data["wn_msg"]] = true;
-    //             chrome.storage.sync.set(items, () => {
-    //                 chrome.storage.sync.get(null, (items) => {
-    //                     console.log("modify note: " + items);
-    //                 });
-    //             });
-    //             noterender("add", id, data["wn_msg"]);
-    //         } else {
-    //             // delete property or item
-    //             items[uri]["notes"][id]["property"][data["wn_msg"]] = false;
-    //             let reservation = false;
-    //             for (let key in item["property"]) {
-    //                 reservation = reservation || item["property"][key];
-    //             }
-    //             if (!reservation) {
-    //                 delete items[uri]["notes"][id];
-    //             }
-    //             chrome.storage.sync.set(items, () => {
-    //                 chrome.storage.sync.get(null, (items) => {
-    //                     console.log("modify note: " + items);
-    //                 });
-    //             });
-    //             noterender("delete", id, data["wn_msg"]);
-    //         }
-    //         erasebar();
-    //         return;
-    //     }
-    //     // new item
-    //     if (data["switch"] === "false") {
-    //         id = uuid(10, 16);
-    //         itemN["property"] = {
-    //             hl: false,
-    //             bold: false,
-    //             italicize: false,
-    //             underline: false,
-    //             strike_through: false,
-    //         };
-    //         itemN["property"][data["wn_msg"]] = true;
-    //         saveSync(itemN, id);
-    //         // 渲染 - 创建新span node
-    //         const nodes = dfsNodes(range);
-    //         noterender("new", id, data["wn_msg"], nodes);
-    //     }
-    //     erasebar();
-    // });
 }
 
 /**
@@ -151,7 +84,7 @@ function pageRender() {
                     endOffset: end["offset"],
                 };
                 const nodes = dfsNodes(range);
-                markrender(id, type, nodes);
+                markRender(id, type, nodes);
             }
         }
     });
@@ -418,6 +351,7 @@ function dfsNodes(range) {
     return resNodes;
 }
 
+/* just depth first traversal dom, find intermediate nodes */
 function dfsWithoutSplit(range) {
     let nodeList = [];
     let resNodes = [];
@@ -519,7 +453,7 @@ function changeMark() {
  * @param {string} type property of nodes
  * @param {object[]} nodes nodes need to deal with
  */
-function markrender(id, type, nodes) {
+function markRender(id, type, nodes) {
     const pre_style = {
         hl: "background: rgb(251, 243, 219);",
         bold: "font-weight:600;",
@@ -583,7 +517,7 @@ function markrender(id, type, nodes) {
  * @param {string} type property of nodes
  * @param {object[]} nodes nodes need to unmark
  */
-function unmarkrender(id, type, nodes) {
+function unmarkRender(id, type, nodes) {
     const pre_style = {
         hl: "background: rgb(251, 243, 219);",
         bold: "font-weight:600;",
@@ -640,66 +574,6 @@ function unmarkrender(id, type, nodes) {
             pe.parentElement.removeChild(pe);
         }
     });
-}
-
-function noterender(mode, id, type, nodes) {
-    const pre_style = {
-        hl: "background: rgb(251, 243, 219);",
-        bold: "font-weight:600;",
-        italicize: "font-style:italic;",
-        underline:
-            "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
-        strike_through: "text-decoration:line-through;",
-    };
-    switch (mode) {
-        case "new": {
-            nodes.forEach((node) => {
-                if (!node || !node.textContent.length) {
-                    return null;
-                }
-                let styles = "";
-                type.split(" ").forEach((each) => {
-                    styles += pre_style[each];
-                });
-                const wrap = document.createElement("span");
-                wrap.setAttribute("class", type);
-                wrap.setAttribute("style", styles);
-                wrap.setAttribute("wn_id", id);
-                wrap.appendChild(node.cloneNode(false));
-                node.parentNode.replaceChild(wrap, node);
-            });
-            break;
-        }
-        case "add": {
-            let temp = document.getElementsByTagName("span");
-            for (let each of temp) {
-                if (each.getAttribute("wn_id") === id) {
-                    each.className += " {0}".format(type);
-                    each.setAttribute(
-                        "style",
-                        each.getAttribute("style") +
-                            " {0}".format(pre_style[type])
-                    );
-                }
-            }
-            break;
-        }
-        case "delete": {
-            let temp = document.getElementsByTagName("span");
-            for (let each of temp) {
-                if (each.getAttribute("wn_id") === id) {
-                    let cl = each.className.split(" ");
-                    let st = each.getAttribute("style");
-                    let cl_new = cl.filter((x) => {
-                        return x !== type;
-                    });
-                    each.setAttribute("class", cl_new.join(" "));
-                    each.setAttribute("style", st.replace(pre_style[type], ""));
-                }
-            }
-            break;
-        }
-    }
 }
 
 /**
@@ -827,22 +701,3 @@ window.addEventListener("message", (event) => {
         respButton(data);
     }
 });
-
-// chrome.storage.sync.clear();
-// chrome.storage.sync.get(null, (items) => {
-//     console.log(items);
-// });
-
-/* test */
-// chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-//     // request => msg; sender => {id, origin} sendResponse => function
-//     // console.log(sender.tab ?"from a content script:" + sender.tab.url :"from the extension");
-//     if (request.cmd === "test") alert(request.value);
-//     sendResponse("I received.");
-// });
-// chrome.runtime.sendMessage(
-//     { greeting: "hello, I'm content-script, Auto" },
-//     function (response) {
-//         console.log("response from popup: " + response);
-//     }
-// );
