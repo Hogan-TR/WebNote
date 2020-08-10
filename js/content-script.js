@@ -395,7 +395,7 @@ function dfsNodes(range) {
             if (!startOffset) {
                 // no need to split
                 resNodes.push(curNode);
-            } else {
+            } else if (startOffset !== curNode.length) {
                 curNode.splitText(startOffset);
                 // get the part after offset
                 resNodes.push(curNode.nextSibling);
