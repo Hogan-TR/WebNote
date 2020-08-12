@@ -20,6 +20,7 @@ function mouseCapture(event) {
     let state = stateJudge(range);
     erasebar();
     injectbar(range, state);
+    window.postMessage({ task: "click listener" });
 }
 
 /**
@@ -638,10 +639,7 @@ function injectbar(range, state) {
         btn.setAttribute("type", "button");
         btn.setAttribute("class", "wn-btn");
         btn.setAttribute("switch", state[msg[i]]);
-        btn.setAttribute(
-            "onclick",
-            "iacMsg('{0}', this.getAttribute('switch'));".format(msg[i])
-        );
+        btn.setAttribute("value", msg[i]);
         btn.insertAdjacentHTML("beforeend", svg_code[i]);
         btn_list.push(btn);
         container.appendChild(btn);
