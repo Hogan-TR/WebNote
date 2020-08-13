@@ -35,6 +35,13 @@ function respButton(data) {
     if (data["switch"] === "false") {
         const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
         let structItem = structureNode(range);
+        // temporary code to fine-tune storage structure
+        if (data["wn_msg"] === "hl") {
+            structItem["data"] = "rgb(251, 243, 219)";
+        } else {
+            structItem["data"] = null;
+        }
+
         saveSync(structItem, id, "new");
         let nodes = dfsNodes(range);
         markRender(id, data["wn_msg"], nodes);
@@ -49,6 +56,13 @@ function respButton(data) {
             }
         }
         let structItem = structureNode(range);
+        // temporary code to fine-tune storage structure
+        if (data["wn_msg"] === "hl") {
+            structItem["data"] = "rgb(251, 243, 219)";
+        } else {
+            structItem["data"] = null;
+        }
+
         let tp_id = "{0}{1}".format(id[0], uuid("", 10, 16));
         saveSync(structItem, id, "change", tp_id);
         let nodes = dfsNodes(range);
