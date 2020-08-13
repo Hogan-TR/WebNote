@@ -541,7 +541,7 @@ function unmarkRender(id, type, nodes) {
         let st = pe.getAttribute("style");
 
         let ids_new = ids.filter((x) => {
-            return x != id;
+            return x !== id;
         });
         let cl_new = cl.filter((x) => {
             return x !== type;
@@ -565,7 +565,7 @@ function unmarkRender(id, type, nodes) {
                 wrap.appendChild(child.cloneNode(false));
                 if (node === child) {
                     if (hasOtherProperty(wrap)) {
-                        updateSpan(pe);
+                        updateSpan(wrap);
                     } else {
                         wrap = node.cloneNode(false);
                     }
