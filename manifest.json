@@ -36,5 +36,7 @@
         "38": "images/38.png",
         "48": "images/48.png"
     },
-    "homepage_url": "https://blog.zeros.live"
+    "author": {
+        "email": "trzerone@gmail.com"
+    }
 }
