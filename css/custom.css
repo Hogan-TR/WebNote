@@ -8,6 +8,7 @@
     border-radius: 0.25rem;
     box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px,
         rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px;
+    animation: popup 0.1s ease-in-out;
 }
 
 .wn-btn {
@@ -28,6 +29,15 @@
 
 .wn-btn:hover {
     background-color: rgba(15, 15, 15, 0.15);
+}
+
+@keyframes popup {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 
 /* .hl {
