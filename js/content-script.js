@@ -626,7 +626,9 @@ function injectbar(range, state) {
         "style",
         "position: absolute; left: {0}px; top: {1}px;".format(
             data.left + window.scrollX,
-            data.top + window.scrollY - 32 - 8
+            data.top + window.scrollY - 32 - 8 < 0
+                ? data.bottom + window.scrollY + 8
+                : data.top + window.scrollY - 32 - 8
         )
     );
     const btn_list = [];
