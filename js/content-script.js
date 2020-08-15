@@ -12,7 +12,7 @@ function mouseCapture(event) {
     if (!sel.toString().length) {
         erasebar();
         return;
-    } else if (isOnbar(event)) {
+    } else if (isOnItem(event, "note-bar")) {
         // click bar to note
         return;
     }
@@ -594,19 +594,20 @@ function unmarkRender(id, type, nodes) {
 /**
  * determine the range of mouse clicks
  * @param {object} event event object
+ * @param {string} className className used to position element
  * @returns {boolean} is or not in range
  */
-function isOnbar(event) {
-    const bar = document.getElementsByClassName("note-bar");
-    if (!bar.length) return false;
+function isOnItem(event, className) {
+    const items = document.getElementsByClassName(className);
+    if (!items.length) return false;
     const mouse_x = event.clientX;
     const mouse_y = event.clientY;
-    const scope_bar = bar[0].getBoundingClientRect();
+    const scope_item = items[0].getBoundingClientRect();
     if (
-        mouse_x >= scope_bar.left &&
-        mouse_x <= scope_bar.right &&
-        mouse_y >= scope_bar.top &&
-        mouse_y <= scope_bar.bottom
+        mouse_x >= scope_item.left &&
+        mouse_x <= scope_item.right &&
+        mouse_y >= scope_item.top &&
+        mouse_y <= scope_item.bottom
     )
         return true;
     else return false;
