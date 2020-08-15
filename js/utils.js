@@ -172,3 +172,11 @@ function deepCompare(x, y) {
 
     return true;
 }
+
+/**
+ * Returns the current timestamp
+ */
+function getTimeNow() {
+    var now = new Date();
+    return now.getTime();
+}

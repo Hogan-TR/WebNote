@@ -1,6 +1,7 @@
 /* global variable */
 const uri = window.location.href.replace(window.location.hash, "");
 let mark = false;
+let timeDown, timeUp;
 
 /**
  * capture and response to mouseup
@@ -12,7 +13,14 @@ function mouseCapture(event) {
     if (!sel.toString().length) {
         erasebar();
         return;
-    } else if (isOnItem(event, "note-bar")) {
+    }
+    if (isOnItem(event, "wn-btn") && timeUp - timeDown > 500) {
+        const range = sel.getRangeAt(0);
+        erasebar();
+        injectcb(range);
+        window.postMessage({ task: "color-bar" });
+        return;
+    } else if (isOnItem(event, "note-bar") || isOnItem(event, "color-bar")) {
         // click bar to note
         return;
     }
@@ -20,7 +28,7 @@ function mouseCapture(event) {
     let state = stateJudge(range);
     erasebar();
     injectbar(range, state);
-    window.postMessage({ task: "click listener" });
+    window.postMessage({ task: "note-bar" });
 }
 
 /**
@@ -36,15 +44,10 @@ function respButton(data) {
         const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
         let structItem = structureNode(range);
         // temporary code to fine-tune storage structure
-        if (data["wn_msg"] === "hl") {
-            structItem["data"] = "rgb(251, 243, 219)";
-        } else {
-            structItem["data"] = null;
-        }
-
+        structItem["data"] = data["data"];
         saveSync(structItem, id, "new");
         let nodes = dfsNodes(range);
-        markRender(id, data["wn_msg"], nodes);
+        markRender(id, data["wn_msg"], data["data"], nodes);
     } else {
         let id = null,
             id_list = range.startContainer.parentElement
@@ -90,6 +93,7 @@ function pageRender() {
             for (let id in data) {
                 const type = pre_trans[id[0]];
                 const item = data[id];
+                const detail = item["data"];
                 let start = antiNode(item["startContainer"]);
                 let end = antiNode(item["endContainer"]);
                 const range = {
@@ -99,7 +103,7 @@ function pageRender() {
                     endOffset: end["offset"],
                 };
                 const nodes = dfsNodes(range);
-                markRender(id, type, nodes);
+                markRender(id, type, detail, nodes);
             }
         }
     });
@@ -466,11 +470,12 @@ function changeMark() {
  * dom mark-renderer
  * @param {string} id item's unique tag
  * @param {string} type property of nodes
+ * @param {string} data need when use different color
  * @param {object[]} nodes nodes need to deal with
  */
-function markRender(id, type, nodes) {
+function markRender(id, type, data, nodes) {
     const pre_style = {
-        hl: "background: rgb(251, 243, 219);",
+        hl: "background: {0};".format(data ? data : "rgb(251, 243, 219)"),
         bold: "font-weight:600;",
         italicize: "font-style:italic;",
         underline:
@@ -665,14 +670,48 @@ function injectbar(range, state) {
 }
 
 /**
- * erase note-bar from page
+ * erase bar(note-bar / color-bar) from page
  */
 function erasebar() {
-    const self = document.getElementsByClassName("note-bar")[0];
-    if (self) {
-        const parent = self.parentElement;
-        parent.removeChild(self);
+    const li = ["note-bar", "color-bar"];
+    for (let className of li) {
+        const self = document.getElementsByClassName(className)[0];
+        if (self) {
+            const parent = self.parentElement;
+            parent.removeChild(self);
+        }
     }
+}
+
+function injectcb(range) {
+    let data = range.getBoundingClientRect();
+    const container = document.createElement("div");
+    container.setAttribute("class", "color-bar");
+    container.setAttribute(
+        "style",
+        "position: absolute; left: {0}px; top: {1}px;".format(
+            data.left + window.scrollX,
+            data.top + window.scrollY - 32 - 8 < 0
+                ? data.bottom + window.scrollY + 8
+                : data.top + window.scrollY - 32 - 8
+        )
+    );
+    color_list = ["#FFF59D", "#B39DDB", "#B3E5FC", "#A5D6A7", "#Ef9A9A"];
+    for (let i = 0; i < 5; i++) {
+        const btn = document.createElement("button");
+        btn.setAttribute("type", "button");
+        btn.setAttribute("class", "color-item");
+        btn.setAttribute("value", color_list[i]);
+        const item = document.createElement("div");
+        item.setAttribute("class", "circle");
+        item.setAttribute(
+            "style",
+            "background-color:{0};".format(color_list[i])
+        );
+        btn.appendChild(item);
+        container.appendChild(btn);
+    }
+    document.getElementsByTagName("body")[0].appendChild(container);
 }
 
 /**
@@ -686,7 +725,14 @@ function injectjs(jsPath) {
     document.head.appendChild(temp);
 }
 
+document.onmousedown = (event) => {
+    // record the time of mouse down
+    timeDown = getTimeNow();
+};
+
 document.onmouseup = (event) => {
+    // record the time of mouse up
+    timeUp = getTimeNow();
     if (mark) {
         mouseCapture(event);
     }
