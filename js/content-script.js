@@ -43,7 +43,6 @@ function respButton(data) {
     if (data["switch"] === "false") {
         const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
         let structItem = structureNode(range);
-        // temporary code to fine-tune storage structure
         structItem["data"] = data["data"];
         saveSync(structItem, id, "new");
         let nodes = dfsNodes(range);
@@ -59,13 +58,6 @@ function respButton(data) {
             }
         }
         let structItem = structureNode(range);
-        // temporary code to fine-tune storage structure
-        if (data["wn_msg"] === "hl") {
-            structItem["data"] = "rgb(251, 243, 219)";
-        } else {
-            structItem["data"] = null;
-        }
-
         let tp_id = "{0}{1}".format(id[0], uuid("", 10, 16));
         saveSync(structItem, id, "change", tp_id);
         let nodes = dfsNodes(range);
@@ -208,20 +200,23 @@ function saveSync(data, id, option, tp_id) {
                 }
                 break;
             case "change":
-                const item = items[uri]["notes"][id];
+                const Item = items[uri]["notes"][id];
+                let item = JSON.parse(JSON.stringify(items[uri]["notes"][id]));
+                delete item["data"];
+
                 if (deepCompare(item, data)) {
                     delete items[uri]["notes"][id];
                 } else if (
                     deepCompare(item["startContainer"], data["startContainer"])
                 ) {
-                    item["startContainer"] = data["endContainer"];
+                    Item["startContainer"] = data["endContainer"];
                 } else if (
                     deepCompare(item["endContainer"], data["endContainer"])
                 ) {
-                    item["endContainer"] = data["startContainer"];
+                    Item["endContainer"] = data["startContainer"];
                 } else {
-                    let item_cp = JSON.parse(JSON.stringify(item));
-                    item["endContainer"] = data["startContainer"];
+                    let item_cp = JSON.parse(JSON.stringify(Item));
+                    Item["endContainer"] = data["startContainer"];
                     item_cp["startContainer"] = data["endContainer"];
                     items[uri]["notes"][tp_id] = item_cp;
                 }
@@ -475,7 +470,7 @@ function changeMark() {
  */
 function markRender(id, type, data, nodes) {
     const pre_style = {
-        hl: "background: {0};".format(data ? data : "rgb(251, 243, 219)"),
+        hl: "background: {0};".format(data ? data : "#FBF3DB"),
         bold: "font-weight:600;",
         italicize: "font-style:italic;",
         underline:
@@ -539,7 +534,7 @@ function markRender(id, type, data, nodes) {
  */
 function unmarkRender(id, type, nodes) {
     const pre_style = {
-        hl: "background: rgb(251, 243, 219);",
+        hl: /background: #\w+;/g,
         bold: "font-weight:600;",
         italicize: "font-style:italic;",
         underline:
