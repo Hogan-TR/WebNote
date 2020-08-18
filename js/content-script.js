@@ -216,6 +216,7 @@ function saveSync(data, id, option, tp_id, ccd) {
                     Item["endContainer"] = data["startContainer"];
                     item_cp["startContainer"] = data["endContainer"];
                     items[uri]["notes"][tp_id] = item_cp;
+                    reUpdateId(item_cp, tp_id);
                 }
                 chrome.storage.sync.set(items, () => {
                     console.log("modify note");
@@ -240,6 +241,7 @@ function CoincideHandler(data, structItem, tp_id) {
                     structItem["startContainer"];
                 item_cp["startContainer"] = structItem["endContainer"];
                 items[uri]["notes"][tp_id] = item_cp;
+                reUpdateId(item_cp, tp_id);
             } else if (data[each]["before"]) {
                 items[uri]["notes"][each]["endContainer"] =
                     structItem["startContainer"];
@@ -251,6 +253,25 @@ function CoincideHandler(data, structItem, tp_id) {
         chrome.storage.sync.set(items, () => {
             console.log("deduplication");
         });
+    });
+}
+
+function reUpdateId(item, id) {
+    let start = antiNode(item["startContainer"]);
+    let end = antiNode(item["endContainer"]);
+    const range = {
+        startContainer: start["node"],
+        endContainer: end["node"],
+        startOffset: start["offset"],
+        endOffset: end["offset"],
+    };
+    const nodes = dfsNodes(range);
+    nodes.forEach((node) => {
+        let pe = node.parentElement;
+        let wn_id = pe
+            .getAttribute("wn_id")
+            .replace(new RegExp(id[0] + "\\w+"), id);
+        pe.setAttribute("wn_id", wn_id);
     });
 }
 
