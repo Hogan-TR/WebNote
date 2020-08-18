@@ -545,18 +545,25 @@ function markRender(id, type, data, nodes) {
                               before: !index ? true : false,
                               after: index + 1 === nodes.length ? true : false,
                           });
-                    // DO SOMETHING TO RENDER
+                    // DOM Render
+                    let wn_id = pe.getAttribute("wn_id").replace(/H\w+/g, id);
+                    let style = pe
+                        .getAttribute("style")
+                        .replace(/background: #\w+;/, pre_style["hl"]);
+                    pe.setAttribute("wn_id", wn_id);
+                    pe.setAttribute("style", style);
+                } else {
+                    // full span node
+                    pe.className += " {0}".format(type);
+                    pe.setAttribute(
+                        "wn_id",
+                        pe.getAttribute("wn_id") + " {0}".format(id)
+                    );
+                    pe.setAttribute(
+                        "style",
+                        pe.getAttribute("style") + pre_style[type]
+                    );
                 }
-                // full span node
-                pe.className += " {0}".format(type);
-                pe.setAttribute(
-                    "wn_id",
-                    pe.getAttribute("wn_id") + " {0}".format(id)
-                );
-                pe.setAttribute(
-                    "style",
-                    pe.getAttribute("style") + " {0}".format(pre_style[type])
-                );
             } else {
                 if (type === "hl" && pe.className.split(" ").includes("hl")) {
                     HL.hasOwnProperty(name)
@@ -567,26 +574,43 @@ function markRender(id, type, data, nodes) {
                               before: !index ? true : false,
                               after: index + 1 === nodes.length ? true : false,
                           });
+                    // DOM Render
+                    pe.childNodes.forEach((child) => {
+                        const wrap = pe.cloneNode(false);
+                        wrap.appendChild(child.cloneNode(false));
+                        if (node === child) {
+                            let wn_id = wrap
+                                .getAttribute("wn_id")
+                                .replace(/H\w+/g, id);
+                            let style = wrap
+                                .getAttribute("style")
+                                .replace(/background: #\w+;/, pre_style["hl"]);
+                            wrap.setAttribute("wn_id", wn_id);
+                            wrap.setAttribute("style", style);
+                        }
+                        pe.parentElement.insertBefore(wrap, pe);
+                    });
+                    pe.parentElement.removeChild(pe);
+                } else {
+                    // split span nodes
+                    pe.childNodes.forEach((child) => {
+                        const wrap = pe.cloneNode(false);
+                        wrap.appendChild(child.cloneNode(false));
+                        if (node === child) {
+                            wrap.className += " {0}".format(type);
+                            wrap.setAttribute(
+                                "wn_id",
+                                wrap.getAttribute("wn_id") + " {0}".format(id)
+                            );
+                            wrap.setAttribute(
+                                "style",
+                                wrap.getAttribute("style") + pre_style[type]
+                            );
+                        }
+                        pe.parentElement.insertBefore(wrap, pe);
+                    });
+                    pe.parentElement.removeChild(pe);
                 }
-                // split span nodes
-                pe.childNodes.forEach((child) => {
-                    const wrap = pe.cloneNode(false);
-                    wrap.appendChild(child.cloneNode(false));
-                    if (node === child) {
-                        wrap.className += " {0}".format(type);
-                        wrap.setAttribute(
-                            "wn_id",
-                            wrap.getAttribute("wn_id") + " {0}".format(id)
-                        );
-                        wrap.setAttribute(
-                            "style",
-                            wrap.getAttribute("style") +
-                                " {0}".format(pre_style[type])
-                        );
-                    }
-                    pe.parentElement.insertBefore(wrap, pe);
-                });
-                pe.parentElement.removeChild(pe);
             }
         } else {
             // new splited-node need to wrapper
