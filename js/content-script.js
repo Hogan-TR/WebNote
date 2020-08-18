@@ -15,12 +15,7 @@ function mouseCapture(event) {
         erasebar();
         return;
     }
-    if (
-        isOnItem(event, "wn-btn") &&
-        timeUp - timeDown > 500 &&
-        document.getElementsByClassName("wn-btn")[0].getAttribute("switch") ===
-            "false"
-    ) {
+    if (isOnItem(event, "wn-btn") && timeUp - timeDown > 500) {
         erasebar();
         injectcb(range);
         window.postMessage({ task: "color-bar" });
@@ -46,11 +41,12 @@ function respButton(data) {
 
     if (data["switch"] === "false") {
         const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
+        let tp_id = uuid("H", 10, 16);
         let structItem = structureNode(range);
         structItem["data"] = data["data"];
-        saveSync(structItem, id, "new");
         let nodes = dfsNodes(range);
-        markRender(id, data["wn_msg"], data["data"], nodes);
+        let ccd = markRender(id, data["wn_msg"], data["data"], nodes); // coincidence check data
+        saveSync(structItem, id, "new", tp_id, ccd);
     } else {
         let id = null,
             id_list = range.startContainer.parentElement
@@ -179,16 +175,15 @@ function antiNode({ tagName, index, offset }) {
  * @param {string} option different saving function
  * @param {string} tp_id partly used
  */
-function saveSync(data, id, option, tp_id) {
+function saveSync(data, id, option, tp_id, ccd) {
     chrome.storage.sync.get(uri, (items) => {
         switch (option) {
             case "new":
                 if (JSON.stringify(items) !== "{}") {
                     items[uri]["notes"][id] = data;
                     chrome.storage.sync.set(items, () => {
-                        chrome.storage.sync.get(null, (items) => {
-                            console.log("save note(new item): " + items);
-                        });
+                        console.log("save note(new item)");
+                        CoincideHandler(ccd, data, tp_id);
                     });
                 } else {
                     // no previous record
@@ -197,9 +192,7 @@ function saveSync(data, id, option, tp_id) {
                     temp[id] = data;
                     iData[uri] = { mark: true, notes: temp };
                     chrome.storage.sync.set(iData, () => {
-                        chrome.storage.sync.get(null, (items) => {
-                            console.log("save note(new web): " + items);
-                        });
+                        console.log("save note(new web)");
                     });
                 }
                 break;
@@ -225,12 +218,39 @@ function saveSync(data, id, option, tp_id) {
                     items[uri]["notes"][tp_id] = item_cp;
                 }
                 chrome.storage.sync.set(items, () => {
-                    chrome.storage.sync.get(null, (items) => {
-                        console.log("modify note: " + items);
-                    });
+                    console.log("modify note");
                 });
                 break;
         }
+    });
+}
+
+function CoincideHandler(data, structItem, tp_id) {
+    // HA7245EBB8C: {sum: 3, num: 1, before: false, after: true}
+    if (JSON.stringify(data) === "{}") return;
+    chrome.storage.sync.get(uri, (items) => {
+        for (let each in data) {
+            if (data[each]["sum"] === data[each]["num"]) {
+                delete items[uri]["notes"][each];
+            } else if (data[each]["before"] && data[each]["after"]) {
+                let item_cp = JSON.parse(
+                    JSON.stringify(items[uri]["notes"][each])
+                );
+                items[uri]["notes"][each]["endContainer"] =
+                    structItem["startContainer"];
+                item_cp["startContainer"] = structItem["endContainer"];
+                items[uri]["notes"][tp_id] = item_cp;
+            } else if (data[each]["before"]) {
+                items[uri]["notes"][each]["endContainer"] =
+                    structItem["startContainer"];
+            } else if (data[each]["after"]) {
+                items[uri]["notes"][each]["startContainer"] =
+                    structItem["endContainer"];
+            }
+        }
+        chrome.storage.sync.set(items, () => {
+            console.log("deduplication");
+        });
     });
 }
 
@@ -456,7 +476,6 @@ function stateJudge(range) {
         }
     }
     property["color"] = color;
-    console.log(property);
     return property;
 }
 
@@ -491,12 +510,43 @@ function markRender(id, type, data, nodes) {
             "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
         strike_through: "text-decoration:line-through;",
     };
+    let HL = {}; // record coincident objects
 
-    nodes.forEach((node) => {
+    function NumId([name]) {
+        let sum = 0;
+        for (let each of document.getElementsByTagName("span")) {
+            let ids = each.getAttribute("wn_id");
+            ids ? (ids = ids.split(" ")) : (ids = []);
+            ids.forEach((e) => {
+                if (name === e) sum++;
+            });
+        }
+        return sum;
+    }
+
+    nodes.forEach((node, index) => {
         let pe = node.parentElement;
         if (pe.tagName === "SPAN" && pe.getAttribute("wn_id")) {
+            // select id of highlight mark
+            let name = pe
+                .getAttribute("wn_id")
+                .split(" ")
+                .filter((each) => {
+                    return each[0] === "H";
+                });
             // wrapped node
             if (pe.childNodes.length === 1) {
+                if (type === "hl" && pe.className.split(" ").includes("hl")) {
+                    HL.hasOwnProperty(name)
+                        ? (HL[name]["num"] += 1)
+                        : (HL[name] = {
+                              sum: NumId(name),
+                              num: 1,
+                              before: !index ? true : false,
+                              after: index + 1 === nodes.length ? true : false,
+                          });
+                    // DO SOMETHING TO RENDER
+                }
                 // full span node
                 pe.className += " {0}".format(type);
                 pe.setAttribute(
@@ -508,6 +558,16 @@ function markRender(id, type, data, nodes) {
                     pe.getAttribute("style") + " {0}".format(pre_style[type])
                 );
             } else {
+                if (type === "hl" && pe.className.split(" ").includes("hl")) {
+                    HL.hasOwnProperty(name)
+                        ? (HL[name]["after"] = true)
+                        : (HL[name] = {
+                              sum: NumId(name),
+                              num: 0,
+                              before: !index ? true : false,
+                              after: index + 1 === nodes.length ? true : false,
+                          });
+                }
                 // split span nodes
                 pe.childNodes.forEach((child) => {
                     const wrap = pe.cloneNode(false);
@@ -538,6 +598,7 @@ function markRender(id, type, data, nodes) {
             pe.replaceChild(wrap, node);
         }
     });
+    return HL;
 }
 
 /**
