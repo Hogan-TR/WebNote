@@ -746,7 +746,7 @@ function injectbar(range, state) {
     container.setAttribute("class", "note-bar");
     container.setAttribute(
         "style",
-        "position: absolute; left: {0}px; top: {1}px;".format(
+        "position: absolute; left: {0}px; top: {1}px; z-index: 9999;".format(
             data.left + window.scrollX,
             data.top + window.scrollY - 32 - 8 < 0
                 ? data.bottom + window.scrollY + 8
@@ -805,7 +805,7 @@ function injectcb(range) {
     container.setAttribute("class", "color-bar");
     container.setAttribute(
         "style",
-        "position: absolute; left: {0}px; top: {1}px;".format(
+        "position: absolute; left: {0}px; top: {1}px; z-index: 9999;".format(
             data.left + window.scrollX,
             data.top + window.scrollY - 32 - 8 < 0
                 ? data.bottom + window.scrollY + 8
