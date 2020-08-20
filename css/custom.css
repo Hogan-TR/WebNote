@@ -50,6 +50,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    padding: 0px 6px;
     white-space: nowrap;
     color: rgb(55, 53, 47);
     background-color: white;
