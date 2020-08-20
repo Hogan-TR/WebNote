@@ -7,10 +7,14 @@
 </head>
 
 <body>
-    <div class="switch-box">
-        <input class="switch-input" type="checkbox" id="switch-input">
-        <label class="switch-label" for="switch-input"></label>
-        <span class="switch-txt" data-open-txt="已启用" data-close-txt="已禁用"></span>
+    <div id="webnote-extension">
+        <div class="switch-box">
+            <label>开关</label>
+            <input class="mui-switch mui-switch-anim" type="checkbox" id="switch-input">
+        </div>
+        <div class="clear-box">
+            <button id="clear-button">清除笔记</button>
+        </div>
     </div>
     <script src="js/popup.js"></script>
 </body>

@@ -11,6 +11,12 @@ switch_box.onchange = function () {
     sendMessage({ type: "change", mark: switch_box.checked });
 };
 
+let clear_button = document.getElementById("clear-button");
+clear_button.onclick = function () {
+    switch_box.checked = false;
+    sendMessage({ type: "clear" });
+};
+
 window.onload = () => {
     sendMessage({ type: "inquire" }, function (response) {
         switch_box.checked = response;

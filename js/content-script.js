@@ -500,6 +500,16 @@ function stateJudge(range) {
     return property;
 }
 
+function clearNotes() {
+    chrome.storage.sync.get(uri, (items) => {
+        if (JSON.stringify(items) !== "{}") {
+            chrome.storage.sync.remove(uri, () => {
+                location.reload();
+            });
+        }
+    });
+}
+
 /**
  * control running of plugin
  */
@@ -861,12 +871,15 @@ window.onload = () => {
 
 // communication between content-script and popup-script
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.type === "change") {
+    if (request.type === "inquire") {
+        sendResponse(mark);
+    } else if (request.type === "change") {
         mark = request.mark;
         changeMark();
         sendResponse("success");
-    } else if (request.type === "inquire") {
-        sendResponse(mark);
+    } else if (request.type === "clear") {
+        clearNotes();
+        sendResponse("success");
     }
 });
 
