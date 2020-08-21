@@ -7,9 +7,11 @@
 }
 span,
 input,
-select {
+button {
     vertical-align: middle;
     font-weight: bold;
+    font-family: "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
+        sans-serif;
     line-height: 2;
 }
 input {

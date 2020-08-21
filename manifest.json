@@ -1,8 +1,12 @@
 {
     "name": "WebNote",
+    "author": {
+        "email": "trzerone@gmail.com"
+    },
     "version": "0.0.1",
     "description": "Take notes directly in the page.",
     "manifest_version": 2,
+    "default_locale": "en",
     "permissions": ["storage", "tabs"],
     "web_accessible_resources": ["js/inject.js"],
     "background": {
@@ -35,8 +39,5 @@
         "32": "images/32.png",
         "38": "images/38.png",
         "48": "images/48.png"
-    },
-    "author": {
-        "email": "trzerone@gmail.com"
     }
 }
