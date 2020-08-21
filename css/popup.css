@@ -1,19 +1,19 @@
 #webnote-extension {
     width: 150px;
     font-size: 14px;
-    line-height: 1.4;
 }
 .switch-box {
     padding: 0px 10px 0px;
 }
-label,
+span,
 input,
 select {
     vertical-align: middle;
     font-weight: bold;
+    line-height: 2;
 }
 input {
-    margin-left: 55px;
+    float: right;
 }
 .mui-switch {
     width: 40px;
@@ -82,5 +82,5 @@ button {
 }
 button:hover,
 button:focus {
-    box-shadow: 0 0 0 2px white, 0 0 0 3px #1F2124;
+    box-shadow: 0 0 0 2px white, 0 0 0 3px #1f2124;
 }
