@@ -1,13 +1,18 @@
 function sendMessage(message, callback) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, message, function (response) {
-            if (callback) callback(response);
-        });
+        console.log(tabs);
+        if (/chrome*/.test(tabs["url"])) {
+            chrome.tabs.sendMessage(tabs[0].id, message, function (response) {
+                if (callback) callback(response);
+            });
+        }
     });
 }
 
 let switch_box = document.getElementById("switch-input");
-switch_box.previousElementSibling.innerText = chrome.i18n.getMessage("function_switch");
+switch_box.previousElementSibling.innerText = chrome.i18n.getMessage(
+    "function_switch"
+);
 switch_box.onchange = function () {
     sendMessage({ type: "change", mark: switch_box.checked });
 };
