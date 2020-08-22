@@ -6,7 +6,7 @@ English | [简体中文](./README.md)
 
 A Chrome extension that allows you to **take notes** arbitrarily on web pages and can **save persistently**.
 
-Mainly used to solve the problem of "notes" when viewing documents and browsing web pages
+Mainly used to solve the problem of "**notes**" when viewing documents and browsing web pages
 
 ## Features
 
@@ -17,7 +17,7 @@ Mainly used to solve the problem of "notes" when viewing documents and browsing 
 ## How to use
 
 1. Download this repository and load it as a developer
-2. Direct download from Chrome's WebStore (Waiting...)
+2. Direct download from Chrome's WebStore [🔗](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp)
 
 ## Simple demonstration
 

@@ -6,7 +6,7 @@
 
 一个可以让你在网页上自由“**圈画**”，并且能够持久**保存**的 Chrome 插件
 
-主要用于解决查阅文档，浏览网页时的“笔记”问题
+主要用于解决查阅文档，浏览网页时的“**笔记**”问题
 
 ## 特点
 
@@ -17,7 +17,7 @@
 ## 使用
 
 1. 下载此仓库，以开发者方式载入
-2. Chrome 的 WebStore 直接下载（Waiting...）
+2. Chrome 的 WebStore 直接下载 [🔗](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp)
 
 ## 简单演示
 
