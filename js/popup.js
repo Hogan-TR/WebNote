@@ -1,7 +1,6 @@
 function sendMessage(message, callback) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        console.log(tabs);
-        if (/chrome*/.test(tabs["url"])) {
+        if (!/chrome*/.test(tabs[0]["url"])) {
             chrome.tabs.sendMessage(tabs[0].id, message, function (response) {
                 if (callback) callback(response);
             });

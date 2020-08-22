@@ -6,13 +6,16 @@
     padding: 0px 10px 0px;
 }
 span,
-input,
-button {
+input {
     vertical-align: middle;
+
+    line-height: 2;
+}
+span,
+button {
     font-weight: bold;
     font-family: "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
         sans-serif;
-    line-height: 2;
 }
 input {
     float: right;
@@ -74,7 +77,6 @@ input {
 button {
     width: 130px;
     background: #383a3f;
-    font-weight: bold;
     color: white;
     border: 0 none;
     border-radius: 1px;
