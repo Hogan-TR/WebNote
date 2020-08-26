@@ -10,7 +10,11 @@ window.addEventListener("message", (event) => {
                 let btns = document.getElementsByClassName("wn-btn");
                 for (let i = 0; i < btns.length; i++) {
                     btns[i].onclick = () => {
-                        iacMsg(btns[i].value, btns[i].getAttribute("switch"));
+                        iacMsg(
+                            btns[i].value,
+                            btns[i].getAttribute("switch"),
+                            btns[i].value === "hl" ? "#FBF3DB" : undefined
+                        );
                     };
                 }
                 break;

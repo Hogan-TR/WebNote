@@ -228,38 +228,41 @@ function saveSync(data, id, option, tp_id, ccd) {
 }
 
 function EdgeHandler(data, structItem, tp_id, id, callback) {
-    chrome.storage.sync.get(uri, (items) => {
-        // handler of edge
-        for (let each in items[uri]["notes"]) {
-            if (each[0] === id[0]) {
-                if (
-                    deepCompare(
-                        items[uri]["notes"][id]["startContainer"],
-                        items[uri]["notes"][each]["endContainer"]
-                    )
-                ) {
-                    items[uri]["notes"][id]["startContainer"] =
-                        items[uri]["notes"][each]["startContainer"];
-                    reUpdateId(items[uri]["notes"][each], id);
-                    delete items[uri]["notes"][each];
-                } else if (
-                    deepCompare(
-                        items[uri]["notes"][id]["endContainer"],
-                        items[uri]["notes"][each]["startContainer"]
-                    )
-                ) {
-                    items[uri]["notes"][id]["endContainer"] =
-                        items[uri]["notes"][each]["endContainer"];
-                    reUpdateId(items[uri]["notes"][each], id);
-                    delete items[uri]["notes"][each];
+    if (id[0] !== "H") {
+        chrome.storage.sync.get(uri, (items) => {
+            // handler of edge
+            for (let each in items[uri]["notes"]) {
+                if (each[0] === id[0]) {
+                    if (
+                        deepCompare(
+                            items[uri]["notes"][id]["startContainer"],
+                            items[uri]["notes"][each]["endContainer"]
+                        )
+                    ) {
+                        items[uri]["notes"][id]["startContainer"] =
+                            items[uri]["notes"][each]["startContainer"];
+                        reUpdateId(items[uri]["notes"][each], id);
+                        delete items[uri]["notes"][each];
+                    } else if (
+                        deepCompare(
+                            items[uri]["notes"][id]["endContainer"],
+                            items[uri]["notes"][each]["startContainer"]
+                        )
+                    ) {
+                        items[uri]["notes"][id]["endContainer"] =
+                            items[uri]["notes"][each]["endContainer"];
+                        reUpdateId(items[uri]["notes"][each], id);
+                        delete items[uri]["notes"][each];
+                    }
                 }
             }
-        }
-        chrome.storage.sync.set(items, () => {
-            console.log("deduplication");
-            callback(data, structItem, tp_id, id);
+            chrome.storage.sync.set(items, () => {
+                console.log("deduplication");
+                callback(data, structItem, tp_id, id);
+            });
         });
-    });
+    }
+    callback(data, structItem, tp_id, id);
 }
 
 function CoincideHandler(data, structItem, tp_id, id) {
@@ -962,7 +965,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 window.addEventListener("message", (event) => {
     let data = event.data;
     if (data.hasOwnProperty("wn_msg")) {
-        // Ex.data => {wn_msg: 'bold', switch: 'false'}
+        // Ex.data => {wn_msg: 'bold', switch: 'false', data: ''}
         respButton(data);
     }
 });
