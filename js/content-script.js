@@ -46,6 +46,7 @@ function respButton(data) {
         structItem["data"] = data["data"];
         let nodes = dfsNodes(range);
         let ccd = markRender(id, data["wn_msg"], data["data"], nodes); // coincidence check data
+        console.log(ccd);
         saveSync(structItem, id, "new", tp_id, ccd);
     } else {
         let id = null,
@@ -183,7 +184,7 @@ function saveSync(data, id, option, tp_id, ccd) {
                     items[uri]["notes"][id] = data;
                     chrome.storage.sync.set(items, () => {
                         console.log("save note(new item)");
-                        CoincideHandler(ccd, data, tp_id);
+                        EdgeHandler(ccd, data, tp_id, id, CoincideHandler);
                     });
                 } else {
                     // no previous record
@@ -226,34 +227,102 @@ function saveSync(data, id, option, tp_id, ccd) {
     });
 }
 
-function CoincideHandler(data, structItem, tp_id) {
-    // HA7245EBB8C: {sum: 3, num: 1, before: false, after: true}
-    if (JSON.stringify(data) === "{}") return;
+function EdgeHandler(data, structItem, tp_id, id, callback) {
     chrome.storage.sync.get(uri, (items) => {
-        for (let each in data) {
-            if (data[each]["sum"] === data[each]["num"]) {
-                delete items[uri]["notes"][each];
-            } else if (data[each]["before"] && data[each]["after"]) {
-                let item_cp = JSON.parse(
-                    JSON.stringify(items[uri]["notes"][each])
-                );
-                items[uri]["notes"][each]["endContainer"] =
-                    structItem["startContainer"];
-                item_cp["startContainer"] = structItem["endContainer"];
-                items[uri]["notes"][tp_id] = item_cp;
-                reUpdateId(item_cp, tp_id);
-            } else if (data[each]["before"]) {
-                items[uri]["notes"][each]["endContainer"] =
-                    structItem["startContainer"];
-            } else if (data[each]["after"]) {
-                items[uri]["notes"][each]["startContainer"] =
-                    structItem["endContainer"];
+        // handler of edge
+        for (let each in items[uri]["notes"]) {
+            if (each[0] === id[0]) {
+                if (
+                    deepCompare(
+                        items[uri]["notes"][id]["startContainer"],
+                        items[uri]["notes"][each]["endContainer"]
+                    )
+                ) {
+                    items[uri]["notes"][id]["startContainer"] =
+                        items[uri]["notes"][each]["startContainer"];
+                    reUpdateId(items[uri]["notes"][each], id);
+                    delete items[uri]["notes"][each];
+                } else if (
+                    deepCompare(
+                        items[uri]["notes"][id]["endContainer"],
+                        items[uri]["notes"][each]["startContainer"]
+                    )
+                ) {
+                    items[uri]["notes"][id]["endContainer"] =
+                        items[uri]["notes"][each]["endContainer"];
+                    reUpdateId(items[uri]["notes"][each], id);
+                    delete items[uri]["notes"][each];
+                }
             }
         }
         chrome.storage.sync.set(items, () => {
             console.log("deduplication");
+            callback(data, structItem, tp_id, id);
         });
     });
+}
+
+function CoincideHandler(data, structItem, tp_id, id) {
+    // HA7245EBB8C: {sum: 3, num: 1, before: false, after: true}
+    if (JSON.stringify(data) === "{}") return;
+    if (id[0] === "H") {
+        chrome.storage.sync.get(uri, (items) => {
+            for (let each in data) {
+                if (data[each]["sum"] === data[each]["num"]) {
+                    delete items[uri]["notes"][each];
+                } else if (data[each]["before"] && data[each]["after"]) {
+                    let item_cp = JSON.parse(
+                        JSON.stringify(items[uri]["notes"][each])
+                    );
+                    items[uri]["notes"][each]["endContainer"] =
+                        structItem["startContainer"];
+                    item_cp["startContainer"] = structItem["endContainer"];
+                    items[uri]["notes"][tp_id] = item_cp;
+                    reUpdateId(item_cp, tp_id);
+                } else if (data[each]["before"]) {
+                    items[uri]["notes"][each]["endContainer"] =
+                        structItem["startContainer"];
+                } else if (data[each]["after"]) {
+                    items[uri]["notes"][each]["startContainer"] =
+                        structItem["endContainer"];
+                }
+            }
+            chrome.storage.sync.set(items, () => {
+                console.log("deduplication");
+            });
+        });
+    } else {
+        chrome.storage.sync.get(uri, (items) => {
+            // handler of coincidence
+            for (let each in data) {
+                let delItem = null;
+                if (data[each]["sum"] === data[each]["num"]) {
+                    delete items[uri]["notes"][each];
+                    break;
+                } else if (data[each]["before"]) {
+                    delItem = {
+                        startContainer:
+                            items[uri]["notes"][each]["startContainer"],
+                        endContainer: items[uri]["notes"][id]["startContainer"],
+                    };
+                    items[uri]["notes"][id]["startContainer"] =
+                        items[uri]["notes"][each]["startContainer"];
+                } else if (data[each]["after"]) {
+                    delItem = {
+                        startContainer: items[uri]["notes"][id]["endContainer"],
+                        endContainer: items[uri]["notes"][each]["endContainer"],
+                    };
+                    items[uri]["notes"][id]["endContainer"] =
+                        items[uri]["notes"][each]["endContainer"];
+                }
+                reUpdateId(delItem, id);
+                delete items[uri]["notes"][each];
+            }
+            chrome.storage.sync.set(items, () => {
+                console.log("deduplication");
+            });
+        });
+    }
 }
 
 function reUpdateId(item, id) {
@@ -541,7 +610,7 @@ function markRender(id, type, data, nodes) {
             "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
         strike_through: "text-decoration:line-through;",
     };
-    let HL = {}; // record coincident objects
+    let ccd = {}; // record coincident objects
 
     function NumId([name]) {
         let sum = 0;
@@ -558,31 +627,33 @@ function markRender(id, type, data, nodes) {
     nodes.forEach((node, index) => {
         let pe = node.parentElement;
         if (pe.tagName === "SPAN" && pe.getAttribute("wn_id")) {
-            // select id of highlight mark
             let name = pe
                 .getAttribute("wn_id")
                 .split(" ")
                 .filter((each) => {
-                    return each[0] === "H";
+                    return each[0] === id[0];
                 });
             // wrapped node
             if (pe.childNodes.length === 1) {
-                if (type === "hl" && pe.className.split(" ").includes("hl")) {
-                    HL.hasOwnProperty(name)
-                        ? (HL[name]["num"] += 1)
-                        : (HL[name] = {
+                if (pe.className.split(" ").includes(type)) {
+                    ccd.hasOwnProperty(name)
+                        ? (ccd[name]["num"] += 1)
+                        : (ccd[name] = {
                               sum: NumId(name),
                               num: 1,
                               before: !index ? true : false,
                               after: index + 1 === nodes.length ? true : false,
                           });
-                    // DOM Render
-                    let wn_id = pe.getAttribute("wn_id").replace(/H\w+/g, id);
-                    let style = pe
-                        .getAttribute("style")
-                        .replace(/background: #\w+;/, pre_style["hl"]);
+                    let wn_id = pe
+                        .getAttribute("wn_id")
+                        .replace(new RegExp(id[0] + "\\w+"), id);
                     pe.setAttribute("wn_id", wn_id);
-                    pe.setAttribute("style", style);
+                    if (type === "hl") {
+                        let style = pe
+                            .getAttribute("style")
+                            .replace(/background: #\w+;/, pre_style["hl"]);
+                        pe.setAttribute("style", style);
+                    }
                 } else {
                     // full span node
                     pe.className += " {0}".format(type);
@@ -596,28 +667,32 @@ function markRender(id, type, data, nodes) {
                     );
                 }
             } else {
-                if (type === "hl" && pe.className.split(" ").includes("hl")) {
-                    HL.hasOwnProperty(name)
-                        ? (HL[name]["after"] = true)
-                        : (HL[name] = {
+                if (pe.className.split(" ").includes(type)) {
+                    ccd.hasOwnProperty(name)
+                        ? (ccd[name]["after"] = true)
+                        : (ccd[name] = {
                               sum: NumId(name),
                               num: 0,
                               before: !index ? true : false,
                               after: index + 1 === nodes.length ? true : false,
                           });
-                    // DOM Render
                     pe.childNodes.forEach((child) => {
                         const wrap = pe.cloneNode(false);
                         wrap.appendChild(child.cloneNode(false));
                         if (node === child) {
                             let wn_id = wrap
                                 .getAttribute("wn_id")
-                                .replace(/H\w+/g, id);
-                            let style = wrap
-                                .getAttribute("style")
-                                .replace(/background: #\w+;/, pre_style["hl"]);
+                                .replace(new RegExp(id[0] + "\\w+"), id);
                             wrap.setAttribute("wn_id", wn_id);
-                            wrap.setAttribute("style", style);
+                            if (type === "hl") {
+                                let style = wrap
+                                    .getAttribute("style")
+                                    .replace(
+                                        /background: #\w+;/,
+                                        pre_style["hl"]
+                                    );
+                                wrap.setAttribute("style", style);
+                            }
                         }
                         pe.parentElement.insertBefore(wrap, pe);
                     });
@@ -653,7 +728,7 @@ function markRender(id, type, data, nodes) {
             pe.replaceChild(wrap, node);
         }
     });
-    return HL;
+    return ccd;
 }
 
 /**
