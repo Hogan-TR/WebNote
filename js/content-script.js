@@ -38,31 +38,21 @@ function mouseCapture(event) {
 function respButton(data) {
     const sel = window.getSelection();
     const range = sel.getRangeAt(0);
+    let structItem = structureNode(range);
+    let nodes = dfsNodes(range);
 
     if (data["switch"] === "false") {
         const id = uuid(data["wn_msg"][0].toUpperCase(), 10, 16);
-        let tp_id = uuid("H", 10, 16);
-        let structItem = structureNode(range);
+        let tp_id = uuid(id[0], 10, 16);
         structItem["data"] = data["data"];
-        let nodes = dfsNodes(range);
         let ccd = markRender(id, data["wn_msg"], data["data"], nodes); // coincidence check data
-        console.log(ccd);
         saveSync(structItem, id, "new", tp_id, ccd);
     } else {
-        let id = null,
-            id_list = range.startContainer.parentElement
-                .getAttribute("wn_id")
-                .split(" ");
-        for (id of id_list) {
-            if (id[0] === data["wn_msg"][0].toUpperCase()) {
-                break;
-            }
-        }
-        let structItem = structureNode(range);
-        let tp_id = "{0}{1}".format(id[0], uuid("", 10, 16));
-        saveSync(structItem, id, "change", tp_id);
-        let nodes = dfsNodes(range);
+        let id_list = range.startContainer.parentElement.getAttribute("wn_id").split(" ");
+        let id = id_list.filter((each) => { return each[0] === data["wn_msg"][0].toUpperCase() })[0];
+        let tp_id = uuid(id[0], 10, 16);
         unmarkRender(id, data["wn_msg"], nodes);
+        saveSync(structItem, id, "change", tp_id);
     }
     erasebar();
 }
@@ -107,13 +97,7 @@ function pageRender() {
  * @param {object} range include container and offset
  * @returns {object} include startContainer and endContainer
  */
-function structureNode(range) {
-    // extract data of start & end nodes
-    const startNode = range.startContainer;
-    const startOffset = range.startOffset;
-    const endNode = range.endContainer;
-    const endOffset = range.endOffset;
-
+function structureNode({ startContainer: startNode, startOffset: startOffset, endContainer: endNode, endOffset: endOffset }) {
     // s_offset & e_offset are the overall offset of the selected text in parent node
     let startParent = parentNode(startNode);
     let s_offset = getBroadoffset(startParent["node"], startNode) + startOffset;
@@ -184,12 +168,11 @@ function saveSync(data, id, option, tp_id, ccd) {
                     items[uri]["notes"][id] = data;
                     chrome.storage.sync.set(items, () => {
                         console.log("save note(new item)");
-                        EdgeHandler(ccd, data, tp_id, id, CoincideHandler);
+                        EdgeHandler(ccd, data, tp_id, id);
                     });
                 } else {
                     // no previous record
-                    let iData = new Object(),
-                        temp = new Object();
+                    let iData = new Object(), temp = new Object();
                     temp[id] = data;
                     iData[uri] = { mark: true, notes: temp };
                     chrome.storage.sync.set(iData, () => {
@@ -202,23 +185,27 @@ function saveSync(data, id, option, tp_id, ccd) {
                 let item = JSON.parse(JSON.stringify(items[uri]["notes"][id]));
                 delete item["data"];
 
-                if (deepCompare(item, data)) {
-                    delete items[uri]["notes"][id];
-                } else if (
-                    deepCompare(item["startContainer"], data["startContainer"])
-                ) {
-                    Item["startContainer"] = data["endContainer"];
-                } else if (
-                    deepCompare(item["endContainer"], data["endContainer"])
-                ) {
-                    Item["endContainer"] = data["startContainer"];
-                } else {
-                    let item_cp = JSON.parse(JSON.stringify(Item));
-                    Item["endContainer"] = data["startContainer"];
-                    item_cp["startContainer"] = data["endContainer"];
-                    items[uri]["notes"][tp_id] = item_cp;
-                    reUpdateId(item_cp, tp_id);
-                }
+                const actions = new Map([
+                    [[item, data], () => { delete items[uri]["notes"][id]; }],
+                    [[item["startContainer"], data["startContainer"]], () => { Item["startContainer"] = data["endContainer"]; }],
+                    [[item["endContainer"], data["endContainer"]], () => { Item["endContainer"] = data["startContainer"]; }],
+                    [[], () => {
+                        let item_cp = JSON.parse(JSON.stringify(Item));
+                        Item["endContainer"] = data["startContainer"];
+                        item_cp["startContainer"] = data["endContainer"];
+                        items[uri]["notes"][tp_id] = item_cp;
+                        reUpdateId(item_cp, tp_id);
+                    }]
+                ]);
+                try {
+                    actions.forEach((action, cp_objs) => {
+                        if (deepCompare(cp_objs[0], cp_objs[1])) {
+                            console.log(cp_objs)
+                            action.call(this);
+                            throw new Error('break'); // break loop
+                        }
+                    });
+                } catch (e) { };
                 chrome.storage.sync.set(items, () => {
                     console.log("modify note");
                 });
@@ -227,7 +214,7 @@ function saveSync(data, id, option, tp_id, ccd) {
     });
 }
 
-function EdgeHandler(data, structItem, tp_id, id, callback) {
+function EdgeHandler(data, structItem, tp_id, id) {
     if (id[0] !== "H") {
         chrome.storage.sync.get(uri, (items) => {
             // handler of edge
@@ -258,11 +245,11 @@ function EdgeHandler(data, structItem, tp_id, id, callback) {
             }
             chrome.storage.sync.set(items, () => {
                 console.log("deduplication");
-                callback(data, structItem, tp_id, id);
+                CoincideHandler(data, structItem, tp_id, id);
             });
         });
     }
-    callback(data, structItem, tp_id, id);
+    CoincideHandler(data, structItem, tp_id, id);
 }
 
 function CoincideHandler(data, structItem, tp_id, id) {
@@ -408,13 +395,7 @@ function getBroadoffset(parentNode, textNode) {
  * @param {object} range
  * @returns {object[]} array of splited nodes
  */
-function dfsNodes(range) {
-    // extract data of S & E
-    const startNode = range.startContainer;
-    const startOffset = range.startOffset;
-    const endNode = range.endContainer;
-    const endOffset = range.endOffset;
-
+function dfsNodes({ startContainer: startNode, startOffset: startOffset, endContainer: endNode, endOffset: endOffset }) {
     // just one node
     if (startNode === endNode && startNode.nodeType === 3) {
         if (startNode.length === endOffset - startOffset) {
@@ -483,15 +464,12 @@ function dfsNodes(range) {
 }
 
 /* just depth first traversal dom, find intermediate nodes */
-function dfsWithoutSplit(range) {
+function dfsWithoutSplit({ startContainer: startNode, endContainer: endNode }) {
     let nodeList = [];
     let resNodes = [];
     let curNode = null;
     let withS = false;
     let root = window.document;
-
-    const startNode = range.startContainer;
-    const endNode = range.endContainer;
 
     if (startNode === endNode) {
         if (startNode.nodeType === 3) {
@@ -642,11 +620,11 @@ function markRender(id, type, data, nodes) {
                     ccd.hasOwnProperty(name)
                         ? (ccd[name]["num"] += 1)
                         : (ccd[name] = {
-                              sum: NumId(name),
-                              num: 1,
-                              before: !index ? true : false,
-                              after: index + 1 === nodes.length ? true : false,
-                          });
+                            sum: NumId(name),
+                            num: 1,
+                            before: !index ? true : false,
+                            after: index + 1 === nodes.length ? true : false,
+                        });
                     let wn_id = pe
                         .getAttribute("wn_id")
                         .replace(new RegExp(id[0] + "\\w+"), id);
@@ -674,11 +652,11 @@ function markRender(id, type, data, nodes) {
                     ccd.hasOwnProperty(name)
                         ? (ccd[name]["after"] = true)
                         : (ccd[name] = {
-                              sum: NumId(name),
-                              num: 0,
-                              before: !index ? true : false,
-                              after: index + 1 === nodes.length ? true : false,
-                          });
+                            sum: NumId(name),
+                            num: 0,
+                            before: !index ? true : false,
+                            after: index + 1 === nodes.length ? true : false,
+                        });
                     pe.childNodes.forEach((child) => {
                         const wrap = pe.cloneNode(false);
                         wrap.appendChild(child.cloneNode(false));
@@ -811,14 +789,7 @@ function isOnItem(event, className) {
     const mouse_x = event.clientX;
     const mouse_y = event.clientY;
     const scope_item = items[0].getBoundingClientRect();
-    if (
-        mouse_x >= scope_item.left &&
-        mouse_x <= scope_item.right &&
-        mouse_y >= scope_item.top &&
-        mouse_y <= scope_item.bottom
-    )
-        return true;
-    else return false;
+    return mouse_x >= scope_item.left && mouse_x <= scope_item.right && mouse_y >= scope_item.top && mouse_y <= scope_item.bottom;
 }
 
 /**
@@ -937,9 +908,7 @@ document.onmousedown = (event) => {
 document.onmouseup = (event) => {
     // record the time of mouse up
     timeUp = getTimeNow();
-    if (mark) {
-        mouseCapture(event);
-    }
+    mark && mouseCapture(event);
 };
 
 window.onload = () => {
@@ -949,23 +918,20 @@ window.onload = () => {
 
 // communication between content-script and popup-script
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.type === "inquire") {
-        sendResponse(mark);
-    } else if (request.type === "change") {
-        mark = request.mark;
-        changeMark();
-        sendResponse("success");
-    } else if (request.type === "clear") {
-        clearNotes();
-        sendResponse("success");
-    }
+    const actions = new Map([
+        ['default', () => { sendResponse('undefined') }],
+        ["inquire", () => { sendResponse(mark); }],
+        ["clear", () => { clearNotes(); sendResponse("success"); }],
+        ["change", () => { mark = request.mark; changeMark(); sendResponse("success"); }]
+    ]);
+
+    let action = actions.get(request.type) || actions.get('default');
+    action.call(this);
 });
 
 // communication between content-script and inject-script
 window.addEventListener("message", (event) => {
     let data = event.data;
-    if (data.hasOwnProperty("wn_msg")) {
-        // Ex.data => {wn_msg: 'bold', switch: 'false', data: ''}
-        respButton(data);
-    }
+    data.hasOwnProperty("wn_msg") && respButton(data);
+    // Ex.data => {wn_msg: 'bold', switch: 'false', data: ''}
 });
