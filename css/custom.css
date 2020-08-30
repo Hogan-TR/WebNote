@@ -17,7 +17,9 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    height: 32px;
     padding: 0px 8px;
+    margin: 0;
     white-space: nowrap;
     color: rgb(55, 53, 47);
     background-color: white;
@@ -27,8 +29,10 @@
     outline: none;
 }
 
-.wn-btn:hover {
+.wn-btn:hover, .wn-btn:active {
     background-color: rgba(15, 15, 15, 0.15);
+    border: none;
+    outline: none;
 }
 
 .color-bar {
@@ -47,10 +51,12 @@
 .color-item {
     user-select: none;
     transition: background 20ms ease-in 0s;
-    cursor: pointer;
+    cursor: default;
     display: flex;
     align-items: center;
+    height: 32px;
     padding: 0px 6px;
+    margin: 0;
     white-space: nowrap;
     color: rgb(55, 53, 47);
     background-color: white;
@@ -62,7 +68,14 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
+    cursor: pointer;
     transition: all 0.2s ease-in-out;
+}
+
+.color-item:hover, .color-item:active {
+    background-color: white;
+    border: none;
+    outline: none;
 }
 
 .circle:hover {

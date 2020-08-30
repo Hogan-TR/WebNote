@@ -240,7 +240,7 @@ function EdgeHandler(data, structItem, tp_id, id) {
                 }();
             })
             chrome.storage.sync.set(items, () => {
-                console.log("deduplication");
+                console.log("merge item");
                 CoincideHandler(data, structItem, tp_id, id);
             });
         });
