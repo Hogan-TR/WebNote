@@ -94,7 +94,10 @@ function pageRender() {
 
 /**
  * structure storage data with range
- * @param {object} range include container and offset
+ * @param {object} startContainer the Node within which the Range starts
+ * @param {number} startOffset represent where in the startContainer the Range starts
+ * @param {object} endContainer the Node within which the Range ends
+ * @param {number} endOffset represent where in the endContainer the Range ends
  * @returns {object} include startContainer and endContainer
  */
 function structureNode({ startContainer: startNode, startOffset: startOffset, endContainer: endNode, endOffset: endOffset }) {
@@ -158,7 +161,8 @@ function antiNode({ tagName, index, offset }) {
  * @param {object} data data that need to be storaged
  * @param {string} id unique identifier
  * @param {string} option different saving function
- * @param {string} tp_id partly used
+ * @param {string} tp_id use to update splited node
+ * @param {object} ccd record coincidence data
  */
 function saveSync(data, id, option, tp_id, ccd) {
     chrome.storage.sync.get(uri, (items) => {
@@ -210,6 +214,13 @@ function saveSync(data, id, option, tp_id, ccd) {
     });
 }
 
+/**
+ * detect adjacent cases of the same attribute and merge them
+ * @param {object} data coincidence data
+ * @param {object} structItem structured data of node range
+ * @param {string} tp_id use to update end part of splited node
+ * @param {string} id id of new item
+ */
 function EdgeHandler(data, structItem, tp_id, id) {
     function hl() {
         chrome.storage.sync.get(uri, (items) => {
@@ -243,6 +254,13 @@ function EdgeHandler(data, structItem, tp_id, id) {
     action.call(this);
 }
 
+/**
+ * detection of coincident constituencies
+ * @param {object} data coincidence data
+ * @param {object} structItem structured data of node range
+ * @param {string} tp_id use to update end part of splited node
+ * @param {string} id id of new item
+ */
 function CoincideHandler(data, structItem, tp_id, id) {
     // HA7245EBB8C: {sum: 3, num: 1, before: false, after: true}
     if (JSON.stringify(data) === "{}") return;
@@ -299,6 +317,11 @@ function CoincideHandler(data, structItem, tp_id, id) {
     });
 }
 
+/**
+ * find target node according to the item, and upadte id of it
+ * @param {object} item record structured data of node position
+ * @param {string} id id of the node to be located
+ */
 function reUpdateId(item, id) {
     let start = antiNode(item["startContainer"]);
     let end = antiNode(item["endContainer"]);
@@ -376,7 +399,10 @@ function getBroadoffset(parentNode, textNode) {
 
 /**
  * rational slicing of the nodes
- * @param {object} range
+ * @param {object} startContainer the Node within which the Range starts
+ * @param {number} startOffset represent where in the startContainer the Range starts
+ * @param {object} endContainer the Node within which the Range ends
+ * @param {number} endOffset represent where in the endContainer the Range ends
  * @returns {object[]} array of splited nodes
  */
 function dfsNodes({ startContainer: startNode, startOffset: startOffset, endContainer: endNode, endOffset: endOffset }) {
@@ -447,7 +473,9 @@ function dfsNodes({ startContainer: startNode, startOffset: startOffset, endCont
     return resNodes;
 }
 
-/* just depth first traversal dom, find intermediate nodes */
+/**
+ * just depth first traversal dom, find intermediate nodes 
+ */
 function dfsWithoutSplit({ startContainer: startNode, endContainer: endNode }) {
     let nodeList = [];
     let resNodes = [];
@@ -534,6 +562,9 @@ function stateJudge(range) {
     return property;
 }
 
+/** 
+ * clear all notes on the current page
+ */
 function clearNotes() {
     chrome.storage.sync.get(uri, (items) => {
         if (JSON.stringify(items) !== "{}") {
@@ -772,7 +803,6 @@ function isOnItem(event, className) {
  * render and pop up note-bar
  * @param {object} ragne use to positioning note-bar
  * @param {object} state show attributes of selected text
- * @param {string} color of button (optional)
  */
 function injectbar(range, state) {
     let data = range.getBoundingClientRect();
@@ -821,7 +851,7 @@ function injectbar(range, state) {
 }
 
 /**
- * erase bar(note-bar / color-bar) from page
+ * erase bar(note-bar/color-bar) from page
  */
 function erasebar() {
     const li = ["note-bar", "color-bar"];
@@ -834,6 +864,9 @@ function erasebar() {
     }
 }
 
+/**
+ * render and pop up color-bar that use to select highlight color
+ */
 function injectcb(range) {
     let data = range.getBoundingClientRect();
     const container = document.createElement("div");
