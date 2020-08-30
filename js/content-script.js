@@ -184,7 +184,6 @@ function saveSync(data, id, option, tp_id, ccd) {
                 const Item = items[uri]["notes"][id];
                 let item = JSON.parse(JSON.stringify(items[uri]["notes"][id]));
                 delete item["data"];
-
                 const actions = new Map([
                     [[item, data], () => { delete items[uri]["notes"][id]; }],
                     [[item["startContainer"], data["startContainer"]], () => { Item["startContainer"] = data["endContainer"]; }],
@@ -197,15 +196,12 @@ function saveSync(data, id, option, tp_id, ccd) {
                         reUpdateId(item_cp, tp_id);
                     }]
                 ]);
-                try {
-                    actions.forEach((action, cp_objs) => {
-                        if (deepCompare(cp_objs[0], cp_objs[1])) {
-                            console.log(cp_objs)
-                            action.call(this);
-                            throw new Error('break'); // break loop
-                        }
-                    });
-                } catch (e) { };
+                [...actions].some(([cp_objs, action]) => {
+                    if (deepCompare(cp_objs[0], cp_objs[1])) {
+                        action.call(this);
+                        return true;
+                    }
+                });
                 chrome.storage.sync.set(items, () => {
                     console.log("modify note");
                 });
@@ -215,104 +211,92 @@ function saveSync(data, id, option, tp_id, ccd) {
 }
 
 function EdgeHandler(data, structItem, tp_id, id) {
-    if (id[0] !== "H") {
+    function hl() {
         chrome.storage.sync.get(uri, (items) => {
-            // handler of edge
-            for (let each in items[uri]["notes"]) {
-                if (each[0] === id[0]) {
-                    if (
-                        deepCompare(
-                            items[uri]["notes"][id]["startContainer"],
-                            items[uri]["notes"][each]["endContainer"]
-                        )
-                    ) {
-                        items[uri]["notes"][id]["startContainer"] =
-                            items[uri]["notes"][each]["startContainer"];
-                        reUpdateId(items[uri]["notes"][each], id);
-                        delete items[uri]["notes"][each];
-                    } else if (
-                        deepCompare(
-                            items[uri]["notes"][id]["endContainer"],
-                            items[uri]["notes"][each]["startContainer"]
-                        )
-                    ) {
-                        items[uri]["notes"][id]["endContainer"] =
-                            items[uri]["notes"][each]["endContainer"];
-                        reUpdateId(items[uri]["notes"][each], id);
-                        delete items[uri]["notes"][each];
-                    }
-                }
-            }
+            const mapping = new Map([
+                ["head", "startContainer"],
+                ["tail", "endContainer"],
+            ]);
+            const ids = Object.keys(items[uri]["notes"]).filter((each) => { return each !== id && each[0] === id[0] });
+            ids.forEach((each) => {
+                let choice = deepCompare(items[uri]["notes"][id]["startContainer"], items[uri]["notes"][each]["endContainer"]) ? "head" :
+                    deepCompare(items[uri]["notes"][id]["endContainer"], items[uri]["notes"][each]["startContainer"]) ? "tail" : undefined
+                let tp = mapping.get(choice)
+                tp && function () {
+                    items[uri]["notes"][id][tp] = items[uri]["notes"][each][tp];
+                    reUpdateId(items[uri]["notes"][each], id);
+                    delete items[uri]["notes"][each];
+                }();
+            })
             chrome.storage.sync.set(items, () => {
                 console.log("deduplication");
                 CoincideHandler(data, structItem, tp_id, id);
             });
         });
     }
-    CoincideHandler(data, structItem, tp_id, id);
+
+    const actions = new Map([
+        ['H', () => { CoincideHandler(data, structItem, tp_id, id); }],
+        ['default', hl]
+    ]);
+    let action = actions.get(id[0]) || actions.get("default");
+    action.call(this);
 }
 
 function CoincideHandler(data, structItem, tp_id, id) {
     // HA7245EBB8C: {sum: 3, num: 1, before: false, after: true}
     if (JSON.stringify(data) === "{}") return;
-    if (id[0] === "H") {
-        chrome.storage.sync.get(uri, (items) => {
+
+    chrome.storage.sync.get(uri, (items) => {
+        function hl() {
             for (let each in data) {
                 if (data[each]["sum"] === data[each]["num"]) {
                     delete items[uri]["notes"][each];
                 } else if (data[each]["before"] && data[each]["after"]) {
-                    let item_cp = JSON.parse(
-                        JSON.stringify(items[uri]["notes"][each])
-                    );
-                    items[uri]["notes"][each]["endContainer"] =
-                        structItem["startContainer"];
+                    let item_cp = JSON.parse(JSON.stringify(items[uri]["notes"][each]));
+                    items[uri]["notes"][each]["endContainer"] = structItem["startContainer"];
                     item_cp["startContainer"] = structItem["endContainer"];
                     items[uri]["notes"][tp_id] = item_cp;
                     reUpdateId(item_cp, tp_id);
                 } else if (data[each]["before"]) {
-                    items[uri]["notes"][each]["endContainer"] =
-                        structItem["startContainer"];
+                    items[uri]["notes"][each]["endContainer"] = structItem["startContainer"];
                 } else if (data[each]["after"]) {
-                    items[uri]["notes"][each]["startContainer"] =
-                        structItem["endContainer"];
+                    items[uri]["notes"][each]["startContainer"] = structItem["endContainer"];
                 }
             }
-            chrome.storage.sync.set(items, () => {
-                console.log("deduplication");
-            });
-        });
-    } else {
-        chrome.storage.sync.get(uri, (items) => {
-            // handler of coincidence
+        }
+        function ot() {
             for (let each in data) {
                 let delItem = null;
                 if (data[each]["sum"] === data[each]["num"]) {
                     delete items[uri]["notes"][each];
                     break;
-                } else if (data[each]["before"]) {
+                } else if (data[each]["before"] || data[each]["after"]) {
+                    const mapping = new Map([
+                        ["before", { sc: each, ec: id, po: "startContainer" }],
+                        ["after", { sc: id, ec: each, po: "endContainer" }]
+                    ]);
+                    let { sc: sc_id, ec: ec_id, po: position } = data[each]["before"] ? mapping.get("before") : mapping.get("after");
                     delItem = {
-                        startContainer:
-                            items[uri]["notes"][each]["startContainer"],
-                        endContainer: items[uri]["notes"][id]["startContainer"],
+                        startContainer: items[uri]["notes"][sc_id][position],
+                        endContainer: items[uri]["notes"][ec_id][position],
                     };
-                    items[uri]["notes"][id]["startContainer"] =
-                        items[uri]["notes"][each]["startContainer"];
-                } else if (data[each]["after"]) {
-                    delItem = {
-                        startContainer: items[uri]["notes"][id]["endContainer"],
-                        endContainer: items[uri]["notes"][each]["endContainer"],
-                    };
-                    items[uri]["notes"][id]["endContainer"] =
-                        items[uri]["notes"][each]["endContainer"];
+                    items[uri]["notes"][id][position] = items[uri]["notes"][each][position];
                 }
                 reUpdateId(delItem, id);
                 delete items[uri]["notes"][each];
             }
-            chrome.storage.sync.set(items, () => {
-                console.log("deduplication");
-            });
+        }
+        const actions = new Map([
+            ['H', hl],
+            ['default', ot]
+        ]);
+        let action = actions.get(id[0]) || actions.get("default");
+        action.call(this);
+        chrome.storage.sync.set(items, () => {
+            console.log("deduplication");
         });
-    }
+    });
 }
 
 function reUpdateId(item, id) {
@@ -584,7 +568,7 @@ function changeMark() {
  */
 function markRender(id, type, data, nodes) {
     const pre_style = {
-        hl: "background: {0};".format(data ? data : "#FBF3DB"),
+        hl: "background: {0};".format(data || "#FBF3DB"),
         bold: "font-weight:600;",
         italicize: "font-style:italic;",
         underline:
@@ -754,21 +738,13 @@ function unmarkRender(id, type, nodes) {
     nodes.forEach((node) => {
         let pe = node.parentElement;
         if (pe.childNodes.length === 1) {
-            if (hasOtherProperty(pe)) {
-                updateSpan(pe);
-            } else {
-                pe.parentElement.replaceChild(node, pe);
-            }
+            hasOtherProperty(pe) ? updateSpan(pe) : pe.parentElement.replaceChild(node, pe);
         } else {
             pe.childNodes.forEach((child) => {
                 let wrap = pe.cloneNode(false);
                 wrap.appendChild(child.cloneNode(false));
                 if (node === child) {
-                    if (hasOtherProperty(wrap)) {
-                        updateSpan(wrap);
-                    } else {
-                        wrap = node.cloneNode(false);
-                    }
+                    hasOtherProperty(wrap) ? updateSpan(wrap) : wrap = node.cloneNode(false);
                 }
                 pe.parentElement.insertBefore(wrap, pe);
             });
