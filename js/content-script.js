@@ -908,9 +908,10 @@ function erasebar() {
     }
     // erase temporary comment
     let cmts = document.getElementsByClassName("wn_comment");
-    if (cmts.length && cmts[0].getAttribute("wn_id").includes("T")) {
+    cmts = [...cmts].filter((cmt) => { return cmt.getAttribute("wn_id").includes("T") });
+    if (cmts.length) {
         saveSync("delete");
-        unmarkRender(cmts[0].getAttribute("wn_id"), "wn_comment", [...cmts].map((e) => { return e.childNodes[0] }));
+        unmarkRender(cmts[0].getAttribute("wn_id"), "wn_comment", cmts.map((e) => { return e.childNodes[0] }));
     }
 }
 
