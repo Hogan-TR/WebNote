@@ -28,6 +28,14 @@ window.addEventListener("message", (event) => {
                 }
                 break;
             }
+            case "note-board": {
+                let send = document.getElementsByClassName("wn-board")[0];
+                send.onclick = () => {
+                    let text = document.getElementsByClassName('wn-inputboard')[0].innerText;
+                    window.postMessage({ wn_cmt: 'wn_comment', data: text });
+                }
+                break;
+            }
         }
     }
 });

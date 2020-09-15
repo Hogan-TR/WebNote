@@ -21,9 +21,14 @@ function mouseCapture(event) {
         window.postMessage({ task: "color-bar" });
         return;
     } else if (isOnItem(event, "wn-btn")) {
+        let id = uuid('T', 10, 16);
+        let structItem = structureNode(range);
+        structItem['data'] = null;
         erasebar();
         injectnote(range);
-        // window.postMessage({ task: 'note-board' });
+        markRender(id, 'wn_comment', '', dfsNodes(range))
+        window.postMessage({ task: 'note-board' });
+        saveSync("new", structItem, id);
         return;
     } else if (isOnItem(event, "note-bar") || isOnItem(event, "color-bar") || isOnItem(event, "note-board")) {
         // click bar to note
@@ -51,13 +56,13 @@ function respButton(data) {
         let tp_id = uuid(id[0], 10, 16);
         structItem["data"] = data["data"];
         let ccd = markRender(id, data["wn_msg"], data["data"], nodes); // coincidence check data
-        saveSync(structItem, id, "new", tp_id, ccd);
+        saveSync("new", structItem, id, tp_id, ccd);
     } else {
         let id_list = range.startContainer.parentElement.getAttribute("wn_id").split(" ");
         let id = id_list.filter((each) => { return each[0] === data["wn_msg"][0].toUpperCase() })[0];
         let tp_id = uuid(id[0], 10, 16);
         unmarkRender(id, data["wn_msg"], nodes);
-        saveSync(structItem, id, "change", tp_id);
+        saveSync("change", structItem, id, tp_id);
     }
     erasebar();
 }
@@ -67,6 +72,7 @@ function respButton(data) {
  */
 function pageRender() {
     const pre_trans = {
+        C: "wn_comment",
         H: "hl",
         B: "bold",
         I: "italicize",
@@ -163,13 +169,13 @@ function antiNode({ tagName, index, offset }) {
 
 /**
  * storage data to 'chrome.storage'
+ * @param {string} option different saving function
  * @param {object} data data that need to be storaged
  * @param {string} id unique identifier
- * @param {string} option different saving function
  * @param {string} tp_id use to update splited node
  * @param {object} ccd record coincidence data
  */
-function saveSync(data, id, option, tp_id, ccd) {
+function saveSync(option, data, id, tp_id, ccd) {
     chrome.storage.sync.get(uri, (items) => {
         switch (option) {
             case "new":
@@ -177,7 +183,7 @@ function saveSync(data, id, option, tp_id, ccd) {
                     items[uri]["notes"][id] = data;
                     chrome.storage.sync.set(items, () => {
                         console.log("save note(new item)");
-                        EdgeHandler(ccd, data, tp_id, id);
+                        ccd && EdgeHandler(ccd, data, tp_id, id);
                     });
                 } else {
                     // no previous record
@@ -213,6 +219,24 @@ function saveSync(data, id, option, tp_id, ccd) {
                 });
                 chrome.storage.sync.set(items, () => {
                     console.log("modify note");
+                });
+                break;
+            case "delete":
+                Object.keys(items[uri]["notes"]).forEach((eid) => {
+                    eid[0] === 'T' && delete items[uri]["notes"][eid];
+                })
+                chrome.storage.sync.set(items, () => {
+                    console.log("delete temporary item");
+                });
+                break;
+            case "rewrite":
+                id = Object.keys(items[uri]["notes"]).filter((eid) => { return eid[0] === 'T' })[0];
+                item_cp = JSON.parse(JSON.stringify(items[uri]["notes"][id]));
+                item_cp["data"] = data;
+                items[uri]["notes"][id.replace("T", "C")] = item_cp;
+                delete items[uri]["notes"][id];
+                chrome.storage.sync.set(items, () => {
+                    console.log("rewrite temporary item");
                 });
                 break;
         }
@@ -524,9 +548,9 @@ function dfsWithoutSplit({ startContainer: startNode, endContainer: endNode }) {
  */
 function stateJudge(range) {
     const resNodes = dfsWithoutSplit(range);
-    const types = ["comment", "hl", "bold", "italicize", "underline", "strike_through"];
+    const types = ["wn_comment", "hl", "bold", "italicize", "underline", "strike_through"];
     let property = {
-        comment: false,
+        wn_comment: false,
         hl: true,
         bold: true,
         italicize: true,
@@ -544,7 +568,7 @@ function stateJudge(range) {
         const data = node.className.split(" ");
         if (node.tagName !== "SPAN" || !isMatch(data)) {
             return {
-                comment: false,
+                wn_comment: false,
                 hl: false,
                 bold: false,
                 italicize: false,
@@ -609,9 +633,9 @@ function markRender(id, type, data, nodes) {
         hl: "background: {0};".format(data || "#FBF3DB"),
         bold: "font-weight:600;",
         italicize: "font-style:italic;",
-        underline:
-            "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
+        underline: "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
         strike_through: "text-decoration:line-through;",
+        wn_comment: "background:rgba(255,212,0,0.14);border-bottom:2px solid rgb(255, 212, 0);padding-bottom:0px;cursor:pointer;"
     };
     let ccd = {}; // record coincident objects
 
@@ -690,10 +714,7 @@ function markRender(id, type, data, nodes) {
                             if (type === "hl") {
                                 let style = wrap
                                     .getAttribute("style")
-                                    .replace(
-                                        /background: #\w+;/,
-                                        pre_style["hl"]
-                                    );
+                                    .replace(/background: #\w+;/, pre_style["hl"]);
                                 wrap.setAttribute("style", style);
                             }
                         }
@@ -748,6 +769,7 @@ function unmarkRender(id, type, nodes) {
         underline:
             "color:inherit;border-bottom:0.05em solid;word-wrap:break-word;",
         strike_through: "text-decoration:line-through;",
+        wn_comment: "background:rgba(255,212,0,0.14);border-bottom:2px solid rgb(255, 212, 0);padding-bottom:0px;cursor:pointer;"
     };
 
     /* check if there are other properties to decide dom-operation */
@@ -791,6 +813,18 @@ function unmarkRender(id, type, nodes) {
     });
 }
 
+function addComment(data) {
+    if (data.length) {
+        saveSync("rewrite", data);
+        let cmts = document.getElementsByClassName("wn_comment");
+        [...cmts].forEach((cmt) => {
+            let ids = cmt.getAttribute("wn_id");
+            cmt.setAttribute("wn_id", ids.replace("T", "C"));
+        });
+    }
+    erasebar();
+}
+
 /**
  * determine the range of mouse clicks
  * @param {object} event event object
@@ -827,7 +861,7 @@ function injectbar(range, state) {
         )
     );
     const btn_list = [];
-    const msg = ["comment", "hl", "bold", "italicize", "underline", "strike_through"];
+    const msg = ["wn_comment", "hl", "bold", "italicize", "underline", "strike_through"];
     const svg_code = [
         '<svg width="1em" height="1em" viewBox="0 0 30 30" class="bi bi-type-comment" fill="currentColor" style="margin-left:5px;margin-right:5px;" xmlns="http://www.w3.org/2000/svg"><path d="M22.7532,22.5338 C23.5213,22.526 24.4345,22.3433 25.1469,22.0548 C25.8531,21.7522 26.626,21.2326 27.1737,20.6925 C27.7104,20.1418 28.2256,19.366 28.5258,18.657 C28.8118,17.9425 28.9924,17.0289 29,16.2589 L29,8.27491 C29,6.61379 28.3442,5.01878 27.1737,3.84128 C26.003,2.66345 24.413,2 22.7532,2 L7.24684,2 C5.58696,2 3.99703,2.663451 2.82627,3.84128 C1.65583,5.01878 1,6.61379 1,8.27491 L1,16.2589 C1.00759057,17.0289 1.188247,17.9425 1.47422,18.657 C1.774375,19.366 2.28965,20.1418 2.82627,20.6925 C3.99703,21.8703 5.58697,22.5338 7.24684,22.5338 L11.7911,22.5338 L16.4207,28.1234 C16.9695,28.6766 17.7145,28.9926 18.4958,28.9999 L18.5012,29 C18.8901,28.9902 19.4592,28.8509 19.8108,28.6796 L19.8132,28.6782 L19.8164,28.6764 C20.2232,28.4396 20.7254,27.932 20.9561,27.5241 C21.1266,27.1583 21.2407,26.586 21.2417,26.1352 L21.2468,26.1352 L21.2468,22.5338 L22.7532,22.5338 Z M19.2468,25.9913 C19.2436,26.0374 19.2418,26.0839 19.2417,26.1308 C19.2416,26.2031 19.2306,26.3254 19.2028,26.4621 C19.1908,26.521 19.1786,26.5682 19.1684,26.6033 C19.1321,26.6491 19.0849,26.7028 19.0304,26.7579 C18.9756,26.8133 18.922,26.8615 18.8759,26.8988 C18.8715,26.9023 18.8673,26.9057 18.8632,26.9089 C18.8156,26.9252 18.7578,26.9422 18.6948,26.9576 C18.6312,26.9732 18.5719,26.9847 18.5225,26.9922 C18.5009,26.9954 18.4843,26.9974 18.4724,26.9987 C18.2567,26.9872 18.0509,26.9031 17.8881,26.7597 L13.3313,21.258 C12.9514,20.7993 12.3867,20.5338 11.7911,20.5338 L7.24684,20.5338 C6.12471,20.5338 5.04788,20.0867 4.25193,19.2898 C3.89579,18.9221 3.52751,18.3689 3.32374,17.8955 C3.13499,17.4156 3.00643,16.7622 3,16.2478 L3,8.27491 C3,7.14032 3.44804,6.05273 4.24473,5.25123 C5.04138,4.44977 6.12132,4 7.24684,4 L22.7532,4 C23.8787,4 24.9586,4.44977 25.7553,5.25123 C26.552,6.05273 27,7.14032 27,8.27491 L27,16.2478 C26.9936,16.7622 26.865,17.4156 26.6763,17.8955 C26.4739,18.3657 26.1091,18.9147 25.7552,19.2824 C25.3897,19.6384 24.8438,20.0052 24.3776,20.2085 C23.9015,20.3978 23.2514,20.5272 22.7419,20.5338 L21.2468,20.5338 C20.1423,20.5338 19.2468,21.4292 19.2468,22.5338 L19.2468,25.9913 Z M8,9 L8,11 L22,11 L22,9 L8,9 Z M8,14 L8,16 L18,16 L18,14 L8,14 Z"></path></svg>',
         '<svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-brightness-high-fill" fill="{0}" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/><path fill-rule="evenodd" d="M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/></svg>'.format(
@@ -863,6 +897,7 @@ function injectbar(range, state) {
  * erase bar(note-bar/color-bar) from page
  */
 function erasebar() {
+    // erase bar
     const li = ["note-bar", "color-bar", "note-board"];
     for (let className of li) {
         const self = document.getElementsByClassName(className)[0];
@@ -870,6 +905,12 @@ function erasebar() {
             const parent = self.parentElement;
             parent.removeChild(self);
         }
+    }
+    // erase temporary comment
+    let cmts = document.getElementsByClassName("wn_comment");
+    if (cmts.length && cmts[0].getAttribute("wn_id").includes("T")) {
+        saveSync("delete");
+        unmarkRender(cmts[0].getAttribute("wn_id"), "wn_comment", [...cmts].map((e) => { return e.childNodes[0] }));
     }
 }
 
@@ -919,9 +960,9 @@ function injectnote(range) {
         )
     );
     const textDom = '\
-    <div style="width: 470px; max-width: 100%; padding: 8px 10px;display: flex; align-items: flex-start; flex-grow: 1;">\
-        <div contenteditable="true" spellcheck="true" placeholder="Add a comment…" class="inputboard" style="max-width: 100%; width: 100%;outline: 0; white-space: pre-wrap; word-break: break-word; caret-color: rgb(55, 53, 47); font-size: 14px; margin-top: 3px; margin-bottom: 2px; max-height: 70vh; overflow: hidden auto; min-height: 1em; color: rgb(55, 53, 47); -webkit-text-fill-color: rgba(55, 53, 47, 0.4);"></div>\
-        <div role="button" style="user-select: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; white-space: nowrap; height: 28px; border-radius: 3px; box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px inset, rgba(15, 15, 15, 0.1) 0px 1px 2px; line-height: 1.2; padding-left: 12px; padding-right: 12px; font-size: 14px; font-weight: 500; margin-left: 8px;">\
+    <div style="width: 360px; max-width: 100%; padding: 8px 10px;display: flex; align-items: flex-start; flex-grow: 1;">\
+        <div contenteditable="true" spellcheck="true" placeholder="Add a comment…" class="wn-inputboard" style="max-width: 100%; width: 100%;outline: 0; white-space: pre-wrap; word-break: break-word; caret-color: rgb(55, 53, 47); font-size: 14px; margin-top: 3px; margin-bottom: 2px; max-height: 70vh; overflow: hidden auto; min-height: 1em; color: rgb(55, 53, 47); -webkit-text-fill-color: rgba(55, 53, 47, 0.4);"></div>\
+        <div role="button" class="wn-board" style="user-select: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; white-space: nowrap; height: 28px; border-radius: 3px; box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px inset, rgba(15, 15, 15, 0.1) 0px 1px 2px; line-height: 1.2; padding-left: 12px; padding-right: 12px; font-size: 14px; font-weight: 500; margin-left: 8px;">\
             <svg class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="20px" height="20px">\
                 <path d="M276.48 289.877333l20.906667 83.754667a42.666667 42.666667 0 0 1-82.773334 20.736l-42.666666-170.666667a42.666667 42.666667 0 0 1 59.434666-49.066666l640 298.666666a42.666667 42.666667 0 0 1 0 77.354667l-640 298.666667a42.666667 42.666667 0 0 1-59.093333-50.346667l85.333333-298.666667A42.666667 42.666667 0 0 1 298.666667 469.333333h170.666666a42.666667 42.666667 0 0 1 0 85.333334H330.837333l-50.773333 177.792L752.426667 512 276.48 289.877333z" p-id="8613"></path>\
             </svg>\
@@ -929,6 +970,7 @@ function injectnote(range) {
     </div>';
     container.insertAdjacentHTML("beforeend", textDom);
     document.getElementsByTagName("body")[0].appendChild(container);
+    document.getElementsByClassName('wn-inputboard')[0].focus();
 }
 
 /**
@@ -974,6 +1016,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 // communication between content-script and inject-script
 window.addEventListener("message", (event) => {
     let data = event.data;
-    data.hasOwnProperty("wn_msg") && respButton(data);
     // Ex.data => {wn_msg: 'bold', switch: 'false', data: ''}
+    data.hasOwnProperty("wn_msg") && respButton(data);
+    // Ex.data => {wn_cmt: 'wn_comment', data: '...'}
+    data.hasOwnProperty("wn_cmt") && addComment(data["data"]);
 });
