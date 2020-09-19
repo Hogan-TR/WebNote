@@ -28,14 +28,6 @@ window.addEventListener("message", (event) => {
                 }
                 break;
             }
-            case "note-board": {
-                let send = document.getElementsByClassName("wn-board")[0];
-                send.onclick = () => {
-                    let text = document.getElementsByClassName('wn-inputboard')[0].innerText;
-                    window.postMessage({ wn_cmt: 'wn_comment', data: text });
-                }
-                break;
-            }
             case "comment-click": {
                 let cmts = document.getElementsByClassName("wn_comment");
                 [...cmts].forEach((cmt) => {
@@ -44,6 +36,21 @@ window.addEventListener("message", (event) => {
                         window.postMessage({ wn_id: id });
                     }
                 });
+                break;
+            }
+            case "comment-buttons": {
+                let send = document.getElementsByClassName("wn-sboard")[0];
+                let dl = document.getElementsByClassName("wn-dboard")[0];
+                let id = send.parentElement.getAttribute("wn_id");
+                send.onclick = () => {
+                    let text = document.getElementsByClassName('wn-inputboard')[0].innerText;
+                    window.postMessage({ wn_scmt: 'wn_comment', id: id, data: text });
+                }
+                if (dl) {
+                    dl.onclick = () => {
+                        window.postMessage({ wn_dcmt: 'wn_comment', id: id });
+                    }
+                }
                 break;
             }
         }
