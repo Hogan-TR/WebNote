@@ -26,7 +26,7 @@ function mouseCapture(event) {
         structItem['data'] = null;
         erasebar();
         injectnote(range);
-        markRender(id, 'wn_comment', '', dfsNodes(range))
+        markRender(id, 'wn_comment', '', dfsNodes(range));
         window.postMessage({ task: 'note-board' });
         saveSync("new", structItem, id);
         return;
@@ -79,8 +79,8 @@ function pageRender() {
         U: "underline",
         S: "strike_through",
     };
-
     chrome.storage.sync.get(uri, (items) => {
+        window.postMessage({ task: "comment-click" });
         if (JSON.stringify(items) !== "{}" && items[uri]["mark"]) {
             mark = items[uri]["mark"];
             const data = items[uri]["notes"];
@@ -821,10 +821,21 @@ function addComment(data) {
             let ids = cmt.getAttribute("wn_id");
             cmt.setAttribute("wn_id", ids.replace("T", "C"));
         });
+        window.postMessage({ task: "comment-click" });
     }
     erasebar();
 }
 
+function showComment(id) {
+    let cmts = document.getElementsByClassName("wn_comment");
+    target = [...cmts].filter((cmt) => {
+        return cmt.getAttribute("wn_id").match(/C\w{10}/g)[0] == id;
+    })[0];
+    chrome.storage.sync.get(uri, (items) => {
+        let data = items[uri]["notes"][id]["data"];
+        injectnote(target, data);
+    })
+}
 /**
  * determine the range of mouse clicks
  * @param {object} event event object
@@ -949,7 +960,20 @@ function injectcb(range) {
     document.getElementsByTagName("body")[0].appendChild(container);
 }
 
-function injectnote(range) {
+function injectnote(range, text) {
+    function moveCursorToEnd(dom) {
+        if (window.getSelection) { // ie11 10 9 ff safari
+            var range = window.getSelection();
+            range.selectAllChildren(dom);
+            range.collapseToEnd();
+        }
+        else if (document.selection) { // ie10 9 8 7 6 5
+            var range = document.selection.createRange();
+            range.moveToElementText(dom);
+            range.collapse(false);
+            range.select();
+        }
+    }
     let data = range.getBoundingClientRect();
     const container = document.createElement("div");
     container.setAttribute("class", "note-board");
@@ -960,18 +984,26 @@ function injectnote(range) {
             data.bottom + window.scrollY + 8
         )
     );
-    const textDom = '\
+    const cancelbutton = '\
+        <div role="button" style="user-select: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; white-space: nowrap; height: 28px; border-radius: 3px; box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px inset, rgba(15, 15, 15, 0.1) 0px 1px 2px; line-height: 1.2; padding-left: 12px; padding-right: 12px; font-size: 14px; font-weight: 500; margin-left: 8px;">\
+            <svg class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16" height="16">\
+                <path d="M842.947458 778.116917 576.847937 512.013303 842.946434 245.883083c8.67559-8.674567 13.447267-20.208251 13.43908-32.477692-0.008186-12.232602-4.7727-23.715121-13.414521-32.332383-8.655124-8.677637-20.149922-13.450337-32.384571-13.4575-12.286838 0-23.808242 4.771677-32.474622 13.434987L512.019443 447.143876 245.88206 181.050496c-8.66331-8.66331-20.175505-13.434987-32.416294-13.434987-12.239765 0-23.75196 4.770653-32.414247 13.43294-8.66024 8.636704-13.428847 20.12434-13.437034 32.356942-0.008186 12.269441 4.76349 23.803125 13.437034 32.476669l266.135336 266.13022L181.050496 778.11794c-8.664334 8.66331-13.43601 20.173458-13.43601 32.41527 0 12.239765 4.7727 23.752983 13.437034 32.417317 8.662287 8.66331 20.173458 13.43294 32.413224 13.43294 12.240789 0 23.754007-4.770653 32.416294-13.43294l266.134313-266.100544 266.101567 266.100544c8.66331 8.66331 20.185738 13.43294 32.4429 13.43294 12.265348-0.008186 23.74889-4.771677 32.369222-13.412474C860.81643 825.081555 860.821547 795.991006 842.947458 778.116917z" p-id="2789"></path>\
+            </svg>\
+        </div>'
+    const textDom = `\
     <div style="width: 360px; max-width: 100%; padding: 8px 10px;display: flex; align-items: flex-start; flex-grow: 1;">\
-        <div contenteditable="true" spellcheck="true" placeholder="Add a comment…" class="wn-inputboard" style="max-width: 100%; width: 100%;outline: 0; white-space: pre-wrap; word-break: break-word; caret-color: rgb(55, 53, 47); font-size: 14px; margin-top: 3px; margin-bottom: 2px; max-height: 70vh; overflow: hidden auto; min-height: 1em; color: rgb(55, 53, 47); -webkit-text-fill-color: rgba(55, 53, 47, 0.4);"></div>\
+        <div contenteditable="true" spellcheck="true" placeholder="Add a comment…" class="wn-inputboard" style="max-width: 100%; width: 100%;outline: 0; white-space: pre-wrap; word-break: break-word; caret-color: rgb(55, 53, 47); font-size: 14px; margin-top: 3px; margin-bottom: 2px; max-height: 70vh; overflow: hidden auto; min-height: 1em; color: rgb(55, 53, 47); -webkit-text-fill-color: rgba(55, 53, 47, 0.4);">${text || ""}</div>\
         <div role="button" class="wn-board" style="user-select: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; white-space: nowrap; height: 28px; border-radius: 3px; box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px inset, rgba(15, 15, 15, 0.1) 0px 1px 2px; line-height: 1.2; padding-left: 12px; padding-right: 12px; font-size: 14px; font-weight: 500; margin-left: 8px;">\
             <svg class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" width="20px" height="20px">\
                 <path d="M276.48 289.877333l20.906667 83.754667a42.666667 42.666667 0 0 1-82.773334 20.736l-42.666666-170.666667a42.666667 42.666667 0 0 1 59.434666-49.066666l640 298.666666a42.666667 42.666667 0 0 1 0 77.354667l-640 298.666667a42.666667 42.666667 0 0 1-59.093333-50.346667l85.333333-298.666667A42.666667 42.666667 0 0 1 298.666667 469.333333h170.666666a42.666667 42.666667 0 0 1 0 85.333334H330.837333l-50.773333 177.792L752.426667 512 276.48 289.877333z" p-id="8613"></path>\
             </svg>\
         </div>\
-    </div>';
+        ${text ? cancelbutton : ""}
+    </div>`;
     container.insertAdjacentHTML("beforeend", textDom);
     document.getElementsByTagName("body")[0].appendChild(container);
-    document.getElementsByClassName('wn-inputboard')[0].focus();
+    let ele = document.getElementsByClassName('wn-inputboard')[0];
+    moveCursorToEnd(ele);
 }
 
 /**
@@ -999,6 +1031,9 @@ document.onmouseup = (event) => {
 window.onload = () => {
     injectjs();
     pageRender();
+    setTimeout(() => {
+        window.postMessage({ task: "comment-click" });
+    }, 0);
 };
 
 // communication between content-script and popup-script
@@ -1021,4 +1056,6 @@ window.addEventListener("message", (event) => {
     data.hasOwnProperty("wn_msg") && respButton(data);
     // Ex.data => {wn_cmt: 'wn_comment', data: '...'}
     data.hasOwnProperty("wn_cmt") && addComment(data["data"]);
+    // Ex.data => {wn_id: 'C8AE49B832A', dom: ..}
+    data.hasOwnProperty("wn_id") && showComment(data["wn_id"]);
 });

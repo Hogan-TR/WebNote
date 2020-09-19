@@ -91,6 +91,10 @@
     }
 }
 
+div.wn-inputboard:empty:before {
+    content: attr(placeholder);
+}
+
 /* .hl {
     font-style: normal;
     padding-left: 3px;

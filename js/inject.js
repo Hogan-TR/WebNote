@@ -36,6 +36,16 @@ window.addEventListener("message", (event) => {
                 }
                 break;
             }
+            case "comment-click": {
+                let cmts = document.getElementsByClassName("wn_comment");
+                [...cmts].forEach((cmt) => {
+                    cmt.onclick = () => {
+                        let id = cmt.getAttribute("wn_id").match(/C\w{10}/g)[0];
+                        window.postMessage({ wn_id: id });
+                    }
+                });
+                break;
+            }
         }
     }
 });
