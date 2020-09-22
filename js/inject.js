@@ -33,7 +33,7 @@ window.addEventListener("message", (event) => {
                 [...cmts].forEach((cmt) => {
                     cmt.onclick = () => {
                         let id = cmt.getAttribute("wn_id").match(/C\w{10}/g)[0];
-                        window.postMessage({ wn_id: id });
+                        window.postMessage({ wn_cmt: 'show', id: id });
                     }
                 });
                 break;
@@ -44,11 +44,11 @@ window.addEventListener("message", (event) => {
                 let id = send.parentElement.getAttribute("wn_id");
                 send.onclick = () => {
                     let text = document.getElementsByClassName('wn-inputboard')[0].innerText;
-                    window.postMessage({ wn_scmt: 'wn_comment', id: id, data: text });
+                    window.postMessage({ wn_cmt: 'add', id: id, data: text });
                 }
                 if (dl) {
                     dl.onclick = () => {
-                        window.postMessage({ wn_dcmt: 'wn_comment', id: id });
+                        window.postMessage({ wn_cmt: 'delete', id: id });
                     }
                 }
                 break;

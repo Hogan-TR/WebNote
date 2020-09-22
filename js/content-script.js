@@ -814,42 +814,57 @@ function unmarkRender(id, type, nodes) {
     });
 }
 
-function addComment(id, data) {
-    if (data.length) {
-        saveSync("rewrite", data, id);
-        let cmts = document.getElementsByClassName("wn_comment");
-        [...cmts].forEach((cmt) => {
-            let ids = cmt.getAttribute("wn_id");
-            cmt.setAttribute("wn_id", ids.replace("T", "C"));
-        });
-        window.postMessage({ task: "comment-click" });
-    } else if (id[0] === "C") {
-        deleteComment(id);
+/**
+ * response program for comment function
+ * @param {object} raw_data message from inject.js 
+ */
+function respComment(raw_data) {
+    function addComment(id, data) {
+        if (data.length) {
+            saveSync("rewrite", data, id);
+            let cmts = document.getElementsByClassName("wn_comment");
+            [...cmts].forEach((cmt) => {
+                let ids = cmt.getAttribute("wn_id");
+                cmt.setAttribute("wn_id", ids.replace("T", "C"));
+            });
+            window.postMessage({ task: "comment-click" });
+        } else if (id[0] === "C") {
+            deleteComment(id);
+        }
+        erasebar();
     }
-    erasebar();
+
+    function deleteComment(id) {
+        let cmts = document.getElementsByClassName("wn_comment");
+        cmts = [...cmts].filter((cmt) => {
+            return cmt.getAttribute("wn_id").match(/C\w{10}/g)[0] == id;
+        });
+        unmarkRender(id, "wn_comment", cmts.map((e) => { return e.childNodes[0] }));
+        saveSync("delete", null, id);
+        erasebar();
+    }
+
+    function showComment(id) {
+        let cmts = document.getElementsByClassName("wn_comment");
+        target = [...cmts].filter((cmt) => {
+            return cmt.getAttribute("wn_id").match(/C\w{10}/g)[0] == id;
+        })[0];
+        chrome.storage.sync.get(uri, (items) => {
+            let data = items[uri]["notes"][id]["data"];
+            injectnote(target, id, data);
+            window.postMessage({ task: "comment-buttons" });
+        })
+    }
+
+    const actions = new Map([
+        ['add', () => { addComment(raw_data['id'], raw_data['data']) }],
+        ['delete', () => { deleteComment(raw_data['id']) }],
+        ['show', () => { showComment(raw_data['id']) }]
+    ]);
+    let action = actions.get(raw_data['wn_cmt']);
+    action.call(this);
 }
 
-function deleteComment(id) {
-    let cmts = document.getElementsByClassName("wn_comment");
-    cmts = [...cmts].filter((cmt) => {
-        return cmt.getAttribute("wn_id").match(/C\w{10}/g)[0] == id;
-    });
-    unmarkRender(id, "wn_comment", cmts.map((e) => { return e.childNodes[0] }));
-    saveSync("delete", null, id);
-    erasebar();
-}
-
-function showComment(id) {
-    let cmts = document.getElementsByClassName("wn_comment");
-    target = [...cmts].filter((cmt) => {
-        return cmt.getAttribute("wn_id").match(/C\w{10}/g)[0] == id;
-    })[0];
-    chrome.storage.sync.get(uri, (items) => {
-        let data = items[uri]["notes"][id]["data"];
-        injectnote(target, id, data);
-        window.postMessage({ task: "comment-buttons" });
-    })
-}
 /**
  * determine the range of mouse clicks
  * @param {object} event event object
@@ -974,6 +989,9 @@ function injectcb(range) {
     document.getElementsByTagName("body")[0].appendChild(container);
 }
 
+/**
+ * render and pop up note-bar that use to read or write comment
+ */
 function injectnote(range, id, text) {
     function moveCursorToEnd(dom) {
         if (window.getSelection) { // ie11 10 9 ff safari
@@ -1065,12 +1083,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 // communication between content-script and inject-script
 window.addEventListener("message", (event) => {
     let data = event.data;
-    // Ex.data => {wn_msg: 'bold', switch: 'false', data: ''}
+    // ex.data => {wn_msg: 'bold', switch: 'false', data: ''}
     data.hasOwnProperty("wn_msg") && respButton(data);
-    // Ex.data => {wn_scmt: 'wn_comment', id: 'C8AE49B832A', data: '...'}
-    data.hasOwnProperty("wn_scmt") && addComment(data["id"], data["data"]);
-    // Ex.data => {wn_dcmt: 'wn_comment', id: 'C8AE49B832A'}
-    data.hasOwnProperty("wn_dcmt") && deleteComment(data["id"]);
-    // Ex.data => {wn_id: 'C8AE49B832A', dom: ..}
-    data.hasOwnProperty("wn_id") && showComment(data["wn_id"]);
+    // ex.data => {wn_cmt: 'add', id: 'C8AE49B832A', data: '...'}
+    data.hasOwnProperty("wn_cmt") && respComment(data);
 });
