@@ -1011,7 +1011,7 @@ function injectnote(range, id, text) {
     container.setAttribute("class", "note-board");
     container.setAttribute(
         "style",
-        "position: absolute; left: {0}px; top: {1}px; z-index: 9999;border-radius: 3px;background: white;box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px;overflow: hidden;".format(
+        "position: absolute; left: {0}px; top: {1}px; z-index: 9999;border-radius: 3px;background: white;box-shadow: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px;overflow: hidden;animation: popup 0.2s ease-in-out;".format(
             data.left + window.scrollX,
             data.bottom + window.scrollY + 8
         )
