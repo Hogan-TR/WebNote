@@ -252,36 +252,27 @@ function saveSync(option, data, id, tp_id, ccd) {
  * @param {string} id id of new item
  */
 function EdgeHandler(data, structItem, tp_id, id) {
-    function hl() {
-        chrome.storage.sync.get(uri, (items) => {
-            const mapping = new Map([
-                ["head", "startContainer"],
-                ["tail", "endContainer"],
-            ]);
-            const ids = Object.keys(items[uri]["notes"]).filter((each) => { return each !== id && each[0] === id[0] });
-            ids.forEach((each) => {
-                let choice = deepCompare(items[uri]["notes"][id]["startContainer"], items[uri]["notes"][each]["endContainer"]) ? "head" :
-                    deepCompare(items[uri]["notes"][id]["endContainer"], items[uri]["notes"][each]["startContainer"]) ? "tail" : undefined
-                let tp = mapping.get(choice)
-                tp && function () {
-                    items[uri]["notes"][id][tp] = items[uri]["notes"][each][tp];
-                    reUpdateId(items[uri]["notes"][each], id);
-                    delete items[uri]["notes"][each];
-                }();
-            })
-            chrome.storage.sync.set(items, () => {
-                console.log("edgehandler done");
-                CoincideHandler(data, structItem, tp_id, id);
-            });
+    chrome.storage.sync.get(uri, (items) => {
+        const mapping = new Map([
+            ["head", "startContainer"],
+            ["tail", "endContainer"],
+        ]);
+        const ids = Object.keys(items[uri]["notes"]).filter((each) => { return each !== id && each[0] === id[0] && items[uri]["notes"][each]["data"] === items[uri]["notes"][id]["data"] });
+        ids.forEach((each) => {
+            let choice = deepCompare(items[uri]["notes"][id]["startContainer"], items[uri]["notes"][each]["endContainer"]) ? "head" :
+                deepCompare(items[uri]["notes"][id]["endContainer"], items[uri]["notes"][each]["startContainer"]) ? "tail" : undefined
+            let tp = mapping.get(choice)
+            tp && function () {
+                items[uri]["notes"][id][tp] = items[uri]["notes"][each][tp];
+                reUpdateId(items[uri]["notes"][each], id);
+                delete items[uri]["notes"][each];
+            }();
+        })
+        chrome.storage.sync.set(items, () => {
+            console.log("edgehandler done");
+            CoincideHandler(data, structItem, tp_id, id);
         });
-    }
-
-    const actions = new Map([
-        ['H', () => { CoincideHandler(data, structItem, tp_id, id); }],
-        ['default', hl]
-    ]);
-    let action = actions.get(id[0]) || actions.get("default");
-    action.call(this);
+    });
 }
 
 /**
