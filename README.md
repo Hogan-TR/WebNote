@@ -17,7 +17,7 @@
 ## 使用
 
 1. 下载此仓库，以开发者方式载入
-2. Chrome 的 WebStore 直接下载 [🔗](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp)
+2. Chrome 的 [WebStore](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp) 直接下载
 
 ## 简单演示
 

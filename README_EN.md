@@ -17,7 +17,7 @@ Mainly used to solve the problem of "**notes**" when viewing documents and brows
 ## How to use
 
 1. Download this repository and load it as a developer
-2. Direct download from Chrome's WebStore [🔗](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp)
+2. Direct download from Chrome's [WebStore](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp)
 
 ## Simple demonstration
 
