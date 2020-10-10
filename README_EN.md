@@ -18,6 +18,7 @@ Mainly used to solve the problem of "**notes**" when viewing documents and brows
 
 1. Download this repository and load it as a developer
 2. Direct download from Chrome's [WebStore](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp)
+3. Direct download from [Here](https://microsoftedge.microsoft.com/addons/detail/webnote/lgedckpahehacohndmafhkdmdjdgaima) for Edge
 
 ## Simple demonstration
 

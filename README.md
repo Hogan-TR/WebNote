@@ -18,6 +18,7 @@
 
 1. 下载此仓库，以开发者方式载入
 2. Chrome 的 [WebStore](https://chrome.google.com/webstore/detail/webnote/hkicaocjinbpfkollonmickokmfmokkp) 直接下载
+3. Microsoft Edge 浏览器[扩展下载](https://microsoftedge.microsoft.com/addons/detail/webnote/lgedckpahehacohndmafhkdmdjdgaima)
 
 ## 简单演示
 
