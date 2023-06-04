@@ -1,24 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="css/popup.css" type="text/css" />
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/icon/logo.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chrome Extensioin + React + TS + Vite App - Popup</title>
   </head>
-
   <body>
-    <div id="webnote-extension">
-      <div class="switch-box">
-        <span></span>
-        <input
-          class="mui-switch mui-switch-anim"
-          type="checkbox"
-          id="switch-input"
-        />
-      </div>
-      <div class="clear-box">
-        <button id="clear-button"></button>
-      </div>
-    </div>
-    <script src="js/popup.js"></script>
+    <div id="app"></div>
+    <script type="module" src="/src/popup/index.tsx"></script>
+    <a href="/pages/page.html">LINK TO PAGE.html</a>
   </body>
 </html>
