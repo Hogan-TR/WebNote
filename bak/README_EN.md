@@ -24,4 +24,4 @@ Mainly used to solve the problem of "**notes**" when viewing documents and brows
 
 <div align=center><img src="./demo.gif"/></div>
 
-> Tips: Currently only a demo, more features are on the way  ಠಿ_ಠ
+> Tips: Currently only a demo, more features are on the way ಠಿ_ಠ

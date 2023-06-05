@@ -1,8 +1,8 @@
 {
-    "function_switch": {
-        "message": "Switch"
-    },
-    "clear_notes": {
-        "message": "CLEAR NOTES"
-    }
+  "function_switch": {
+    "message": "Switch"
+  },
+  "clear_notes": {
+    "message": "CLEAR NOTES"
+  }
 }

@@ -1,90 +1,87 @@
 #webnote-extension {
-    width: 150px;
-    font-size: 14px;
+  width: 150px;
+  font-size: 14px;
 }
 .switch-box {
-    padding: 0px 10px 0px;
+  padding: 0px 10px 0px;
 }
 span,
 input {
-    vertical-align: middle;
+  vertical-align: middle;
 
-    line-height: 2;
+  line-height: 2;
 }
 span,
 button {
-    font-weight: bold;
-    font-family: "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei",
-        sans-serif;
+  font-weight: bold;
+  font-family: 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei', sans-serif;
 }
 input {
-    float: right;
+  float: right;
 }
 .mui-switch {
-    width: 40px;
-    height: 22px;
-    position: relative;
-    border: 1px solid #dfdfdf;
-    background-color: #fdfdfd;
-    box-shadow: #dfdfdf 0 0 0 0 inset;
-    border-radius: 20px;
-    background-clip: content-box;
-    display: inline-block;
-    cursor: pointer;
-    -webkit-appearance: none;
-    user-select: none;
-    outline: none;
+  width: 40px;
+  height: 22px;
+  position: relative;
+  border: 1px solid #dfdfdf;
+  background-color: #fdfdfd;
+  box-shadow: #dfdfdf 0 0 0 0 inset;
+  border-radius: 20px;
+  background-clip: content-box;
+  display: inline-block;
+  cursor: pointer;
+  -webkit-appearance: none;
+  user-select: none;
+  outline: none;
 }
 .mui-switch:before {
-    content: "";
-    width: 20px;
-    height: 20px;
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    border-radius: 20px;
-    background-color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  content: '';
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  border-radius: 20px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 .mui-switch:checked {
-    border-color: #383a3f;
-    box-shadow: #383a3f 0 0 0 16px inset;
-    background-color: #383a3f;
+  border-color: #383a3f;
+  box-shadow: #383a3f 0 0 0 16px inset;
+  background-color: #383a3f;
 }
 .mui-switch:checked:before {
-    left: 18px;
+  left: 18px;
 }
 .mui-switch.mui-switch-anim {
-    transition: border cubic-bezier(0, 0, 0, 1) 0.4s,
-        box-shadow cubic-bezier(0, 0, 0, 1) 0.4s;
+  transition: border cubic-bezier(0, 0, 0, 1) 0.4s, box-shadow cubic-bezier(0, 0, 0, 1) 0.4s;
 }
 .mui-switch.mui-switch-anim:before {
-    transition: left 0.3s;
+  transition: left 0.3s;
 }
 .mui-switch.mui-switch-anim:checked {
-    box-shadow: #383a3f 0 0 0 16px inset;
-    background-color: #383a3f;
-    transition: border ease 0.4s, box-shadow ease 0.4s,
-        background-color ease 1.2s;
+  box-shadow: #383a3f 0 0 0 16px inset;
+  background-color: #383a3f;
+  transition: border ease 0.4s, box-shadow ease 0.4s, background-color ease 1.2s;
 }
 .mui-switch.mui-switch-anim:checked:before {
-    transition: left 0.3s;
+  transition: left 0.3s;
 }
 
 .clear-box {
-    text-align: center;
+  text-align: center;
 }
 button {
-    width: 130px;
-    background: #383a3f;
-    color: white;
-    border: 0 none;
-    border-radius: 1px;
-    cursor: pointer;
-    padding: 10px 5px;
-    margin: 10px 5px;
+  width: 130px;
+  background: #383a3f;
+  color: white;
+  border: 0 none;
+  border-radius: 1px;
+  cursor: pointer;
+  padding: 10px 5px;
+  margin: 10px 5px;
 }
 button:hover,
 button:focus {
-    box-shadow: 0 0 0 2px white, 0 0 0 3px #1f2124;
+  box-shadow: 0 0 0 2px white, 0 0 0 3px #1f2124;
 }
