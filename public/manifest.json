@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "my-crx",
+  "version": "0.0.0",
+  "description": "",
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "<all_urls>"
+      ],
+      "js": [
+        "src/pages/content/index.js"
+      ]
+    }
+  ]
+}
