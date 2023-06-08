@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import './Options.css'
+import '@pages/options/Options.css'
 
-function App() {
+function Options() {
   const [crx, setCrx] = useState('create-chrome-ext')
 
   return (
@@ -17,4 +17,4 @@ function App() {
   )
 }
 
-export default App
+export default Options

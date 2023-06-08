@@ -14,7 +14,15 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"],
+      "@assets/*": ["src/assets/*"],
+      "@pages/*": ["src/pages/*"]
+      // "virtual:reload-on-update-in-background-script": ["./src/global.d.ts"],
+      // "virtual:reload-on-update-in-view": ["./src/global.d.ts"]
+    }
   },
   "include": ["src", "vite.config.ts"]
 }

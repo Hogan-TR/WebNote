@@ -17,6 +17,13 @@ const isProd = !isDev
 
 export default defineConfig(({ mode }) => {
   return {
+    resolve: {
+      alias: {
+        '@src': root,
+        '@pages': pagesDir,
+        '@assets': assetsDir,
+      },
+    },
     publicDir,
     build: {
       outDir,
@@ -38,23 +45,22 @@ export default defineConfig(({ mode }) => {
           entryFileNames: 'src/pages/[name]/index.js',
           chunkFileNames: isDev ? 'assets/js/[name].js' : 'assets/js/[name].[hash].js',
           assetFileNames: (assetInfo) => {
-            const { dir, name: _name } = path.parse(assetInfo.name as string)
-            const assetFolder = dir.split('/').at(-1)
-            const name = assetFolder + firstUpperCase(_name)
-            // TODO: contentStyle
-            return `assets/[ext]/${name}.chunk.[ext]`
+            const { name } = path.parse(assetInfo.name as string)
+            if (name === 'contentStyle') {
+              return `assets/css/contentStyle-${cacheInvalidationKey}.css`
+            }
+            return `assets/[ext]/${name}-[hash].[ext]`
           },
         },
       },
     },
-
     plugins: [
       react(),
       makeManifest(manifest, {
         isDev,
         // contentScriptCssKey: regenerateCacheInvalidationKey(),
       }),
-      // customDynamicImport(),
+      customDynamicImport(),
       zipPack({
         outDir: `package`,
         inDir: 'build',
@@ -66,11 +72,6 @@ export default defineConfig(({ mode }) => {
     ],
   }
 })
-
-function firstUpperCase(str: string) {
-  const firstAlphabet = new RegExp(/( |^)[a-z]/, 'g')
-  return str.toLowerCase().replace(firstAlphabet, (L) => L.toUpperCase())
-}
 
 /**
  * Generate content script css key

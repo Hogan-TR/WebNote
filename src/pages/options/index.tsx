@@ -1,10 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './Options'
-import './index.css'
+import Options from '@pages/options/Options'
+import '@pages/options/index.css'
 
-ReactDOM.createRoot(document.getElementById('app') as HTMLElement).render(
+ReactDOM.createRoot(document.getElementById('app-container') as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <Options />
   </React.StrictMode>,
 )
