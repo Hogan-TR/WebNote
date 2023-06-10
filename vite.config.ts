@@ -35,6 +35,7 @@ export default defineConfig(({ mode }) => {
           popup: resolve(pagesDir, 'popup', 'index.html'),
           options: resolve(pagesDir, 'options', 'index.html'),
           content: resolve(pagesDir, 'content', 'index.ts'),
+          contentInject: resolve(pagesDir, 'content', 'inject.ts'),
           background: resolve(pagesDir, 'background', 'index.ts'),
         },
         watch: {
@@ -42,13 +43,16 @@ export default defineConfig(({ mode }) => {
           exclude: ['node_modules/**', 'src/**/*.spec.ts'],
         },
         output: {
-          entryFileNames: 'src/pages/[name]/index.js',
+          entryFileNames: (entryInfo) => {
+            const { name } = path.parse(entryInfo.name as string)
+            if (name === 'contentInject') {
+              return `src/pages/content/inject.js`
+            }
+            return `src/pages/[name]/index.js`
+          },
           chunkFileNames: isDev ? 'assets/js/[name].js' : 'assets/js/[name].[hash].js',
           assetFileNames: (assetInfo) => {
             const { name } = path.parse(assetInfo.name as string)
-            if (name === 'contentStyle') {
-              return `assets/css/contentStyle-${cacheInvalidationKey}.css`
-            }
             return `assets/[ext]/${name}-[hash].[ext]`
           },
         },

@@ -29,7 +29,7 @@ const manifest: chrome.runtime.ManifestV3 = {
   ],
   web_accessible_resources: [
     {
-      resources: ['assets/js/*.js', 'assets/css/*.css'],
+      resources: ['src/pages/content/inject.js', 'assets/js/*.js', 'assets/css/*.css'],
       matches: ['*://*/*'],
     },
   ],
