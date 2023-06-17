@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import '@pages/options/Options.css'
+import './Popup.css'
 
-function Options() {
+function App() {
   const [crx, setCrx] = useState('create-chrome-ext')
 
   return (
     <main>
-      <h3>Options Page!</h3>
+      <h3>Popup Page!</h3>
 
       <h6>v 0.0.0</h6>
 
@@ -17,4 +17,4 @@ function Options() {
   )
 }
 
-export default Options
+export default App

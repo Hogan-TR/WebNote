@@ -1,5 +1,5 @@
 {
-  "name": "my-crx",
+  "name": "my-crx-app",
   "version": "0.0.0",
   "author": "Hogan-TR",
   "description": "",
@@ -25,15 +25,15 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.236",
-    "@types/node": "^18.15.11",
-    "@types/react": "^18.0.21",
-    "@types/react-dom": "^18.2.4",
-    "@vitejs/plugin-react": "^2.2.0",
+    "@crxjs/vite-plugin": "^1.0.14",
+    "@types/chrome": "^0.0.237",
+    "@types/react": "^18.0.14",
+    "@types/react-dom": "^18.0.5",
+    "@vitejs/plugin-react": "^4.0.0",
     "glob": "^9.2.1",
     "prettier": "^2.7.1",
-    "typescript": "^4.8.3",
-    "vite": "^4.3.9",
+    "typescript": "^5.1.3",
+    "vite": "~4.2.2",
     "vite-plugin-zip-pack": "^1.0.5"
   }
 }
