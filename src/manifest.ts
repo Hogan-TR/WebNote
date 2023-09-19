@@ -5,6 +5,7 @@ export default defineManifest({
   description: '',
   version: '0.0.0',
   manifest_version: 3,
+  default_locale: 'en',
   icons: {
     '16': 'img/logo-16.png',
     '32': 'img/logo-34.png',
