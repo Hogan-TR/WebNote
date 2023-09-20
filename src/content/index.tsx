@@ -3,7 +3,11 @@ import Content from './Content'
 // @ts-ignore
 import mainWorld from './inject?script&module'
 
-console.info('chrome-ext template-react-ts content script')
+// receive msg from popup
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  console.debug('[content script] receive msg -', msg)
+  sendResponse(`receive: ${msg}`)
+})
 
 // content view dom
 const root = document.createElement('div')
