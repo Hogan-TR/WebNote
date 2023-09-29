@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { MessageHandlers, PopupMsg, Selected, WebNote } from '../interface'
-import Panel from '../components/Panel'
+import Panel from './components/Panel'
 import ChromeStorage from '../utils/storage'
+import './Content.css'
 
 interface ContentProps {
   uri: string
@@ -43,6 +44,9 @@ export default function Content(props: ContentProps) {
       },
       clear_notes: async (sendResponse) => {
         sendResponse('received')
+        await storage.remove(uri) // TODO: only clear when with records ?
+        console.log('notes cleared of:', uri)
+        location.reload()
       },
     }
 
@@ -69,6 +73,7 @@ export default function Content(props: ContentProps) {
 
   // handle object selection change
   const handleSelChange = useCallback(() => {
+    // TODO: remove duplicate selection
     const selection = window.getSelection()
     console.debug('[selection change]')
     if (selection && selection.toString() && selection.rangeCount > 0) {
@@ -84,9 +89,9 @@ export default function Content(props: ContentProps) {
   }, [])
 
   useEffect(() => {
-    document.addEventListener('selectionchange', handleSelChange)
+    document.addEventListener('mouseup', handleSelChange)
     return () => {
-      document.removeEventListener('selectionchange', handleSelChange)
+      document.removeEventListener('mouseup', handleSelChange)
     }
   }, [handleSelChange])
 

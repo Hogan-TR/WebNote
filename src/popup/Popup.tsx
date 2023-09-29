@@ -1,7 +1,7 @@
-import './Popup.css'
 import { sendMsgToActiveTab } from '../utils/message'
 import { useEffect, useState } from 'react'
 import { PopupMsg } from '../interface'
+import './Popup.css'
 
 function App() {
   const [enable, setEnable] = useState<boolean>(false)
@@ -32,6 +32,7 @@ function App() {
   }
 
   const handleButton = async () => {
+    setEnable(false)
     const msg: PopupMsg = {
       type: 'clear_notes',
     }
