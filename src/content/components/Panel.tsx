@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { Selected } from '../../interface'
 import Icon from './Icon'
 
@@ -36,15 +36,50 @@ export default function Panel(props: MarkerProps) {
     </>,
   ]
 
+  const timeoutRef = useRef<number | undefined>(undefined)
+  const [isLongPress, setIsLongPress] = useState<boolean>(false)
+
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     console.log(`Button ${event.currentTarget.textContent} clicked`)
   }
 
-  const buttons = funcs.map((name, index) => (
-    <button type="button" className="wn-btn" value={name} key={index} onClick={handleClick}>
-      <Icon>{icon_path[index]}</Icon>
-    </button>
-  ))
+  const handleMouseDown = () => {
+    setIsLongPress(false)
+    timeoutRef.current = setTimeout(() => {
+      console.log('trigger long press')
+      setIsLongPress(true)
+    }, 500)
+  }
+
+  const handleMouseUp = () => {
+    clearTimeout(timeoutRef.current)
+    if (!isLongPress) {
+      console.log('trigger onClick')
+    }
+  }
+
+  const buttons = funcs.map((name, index) => {
+    if (index === 0) {
+      return (
+        <button
+          type="button"
+          className="wn-btn"
+          value={name}
+          key={index}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+        >
+          <Icon>{icon_path[0]}</Icon>
+        </button>
+      )
+    } else {
+      return (
+        <button type="button" className="wn-btn" value={name} key={index} onClick={handleClick}>
+          <Icon>{icon_path[index]}</Icon>
+        </button>
+      )
+    }
+  })
 
   const handleClickOutside = useCallback(
     (event: MouseEvent) => {
