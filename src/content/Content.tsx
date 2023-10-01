@@ -69,7 +69,7 @@ export default function Content(props: ContentProps) {
     return () => {
       chrome.runtime.onMessage.removeListener(msgHandler)
     }
-  }, [])
+  }, [enable]) // TODO: other parameters like uri ?
 
   // handle object selection change
   const handleSelChange = useCallback(() => {
@@ -101,6 +101,25 @@ export default function Content(props: ContentProps) {
     selected?.selection.removeAllRanges()
     setSelected(null)
   }, [selected])
+
+  // trigger handleClose when click outside
+  const handleClickOutside = useCallback(
+    (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      console.log(`[mousedown] ${target.closest('#content-view-container') ? 'inside' : 'outside'} panel`)
+      if (!target.closest('#content-view-container')) {
+        handleClose()
+      }
+    },
+    [handleClose],
+  )
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [handleClickOutside])
 
   return enable && selected ? <Panel selected={selected} onClose={handleClose} /> : null
 }
