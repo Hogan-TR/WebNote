@@ -1,7 +1,7 @@
 import ReactDOM from 'react-dom/client'
-import Content from './Content'
+import Content from '@content/Content'
 // @ts-ignore
-import mainWorld from './inject?script&module'
+import mainWorld from '@content/inject?script&module'
 
 // unique identifier for current page, used as the key in storage map
 const uri = window.location.href.replace(window.location.hash, '')

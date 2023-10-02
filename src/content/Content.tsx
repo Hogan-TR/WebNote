@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { MessageHandlers, PopupMsg, Selected, WebNote } from '../interface'
-import Panel from './components/Panel'
-import ChromeStorage from '../utils/storage'
-import './Content.css'
+import { MessageHandlers, PopupMsg, Selected, WebNote } from '@/interface'
+import ChromeStorage from '@utils/storage'
+import Panel from '@content/components/Panel'
+import '@content/Content.css'
 
 interface ContentProps {
   uri: string

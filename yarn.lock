@@ -433,6 +433,11 @@
   resolved "https://registry.npmmirror.com/@types/har-format/-/har-format-1.2.11.tgz#26aff34e9c782b2648cc45778abadcd930f7db43"
   integrity sha512-T232/TneofqK30AD1LRrrf8KnjLvzrjWDp7eWST5KoiSzrBfRsLrWDPk4STQPW4NZG6v2MltnduBVmakbZOBIQ==
 
+"@types/node@^20.8.0":
+  version "20.8.0"
+  resolved "https://registry.npmmirror.com/@types/node/-/node-20.8.0.tgz#10ddf0119cf20028781c06d7115562934e53f745"
+  integrity sha512-LzcWltT83s1bthcvjBmiBvGJiiUe84NWRHkw+ZV6Fr41z2FbIzvc815dk2nQ3RAKMuN2fkenM/z3Xv2QzEpYxQ==
+
 "@types/prop-types@*":
   version "15.7.5"
   resolved "https://registry.npmmirror.com/@types/prop-types/-/prop-types-15.7.5.tgz#5f19d2b85a98e9558036f6a3cacc8819420f05cf"

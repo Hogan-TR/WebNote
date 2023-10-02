@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Selected } from '../../interface'
-import FuncButton from './funcBtn'
-import ColorButton from './colorBtn'
+import { Selected } from '@/interface'
+import FuncButton from '@content/components/funcBtn'
+import ColorButton from '@content/components/colorBtn'
 
 interface MarkerProps {
   selected: Selected

@@ -1,7 +1,7 @@
-import { sendMsgToActiveTab } from '../utils/message'
 import { useEffect, useState } from 'react'
-import { PopupMsg } from '../interface'
-import './Popup.css'
+import { PopupMsg } from '@/interface'
+import { sendMsgToActiveTab } from '@utils/message'
+import '@popup/Popup.css'
 
 function App() {
   const [enable, setEnable] = useState<boolean>(false)

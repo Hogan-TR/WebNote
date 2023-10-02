@@ -1,4 +1,4 @@
-import { StorageService } from '../interface'
+import { StorageService } from '@/interface'
 
 type storageType = 'local' | 'sync' | 'session'
 
